@@ -87,8 +87,9 @@ float bgCol()
 
 // Draw Cursor Function
 // Make cool effect by dividing
-void drawCursor(float maxDist)
+void drawCursor()
 {
+    float maxDist = 32+(amp/4)*visScaleFac;
     float fade = (maxDist+scaledSoundCoords-cursorDistNorm)/(maxDist+scaledSoundCoords);
     higCol = vec3(1/mix(0, 16, fade));
     if (higCol.x < 0) higCol.x = 0;
@@ -101,7 +102,7 @@ void drawCursor(float maxDist)
 
 void main()
 {
-    drawCursor(16+(amp/4));
+    drawCursor();
     freqVis();
     outColor = vec4(higCol, 1);
 }
