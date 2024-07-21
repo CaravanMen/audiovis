@@ -89,7 +89,7 @@ float bgCol()
 // Make cool effect by dividing
 void drawCursor()
 {
-    float maxDist = 32+(amp/4)*visScaleFac;
+    float maxDist = (32+sqrt(amp))*(sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y))/1024);
     float fade = (maxDist+scaledSoundCoords-cursorDistNorm)/(maxDist+scaledSoundCoords);
     higCol = vec3(1/mix(0, 16, fade));
     if (higCol.x < 0) higCol.x = 0;
