@@ -56,7 +56,7 @@ bool fftw_filter(fftwType* source, fftwType* array, int rows, fftwType minFreq, 
         fftwType sect = sqrt((real*real)+(imag*imag));
         if (sect > loudest)
         {
-            loudest=sect;
+            loudest = sect;
         }
         fftPass[i] = sect;
     }

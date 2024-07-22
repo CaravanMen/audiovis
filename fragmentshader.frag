@@ -15,16 +15,17 @@ uniform float visMag = 2;
 uniform float colMag = 2;
 // OUT
 layout (location = 0, index = 0) out vec4 outColor;
-// VARIABLES
-vec3 backgroundColor = vec3(0.1);
-vec3 higCol = backgroundColor;
+// Freq Visualizer Calculations
+float soundCoords = highRange[int(gl_FragCoord.x)*BUFSIZE/screenSize.x];
 float visScaleFac = (screenSize.y/1024.0f)*visMag;
 float errScaled = visScaleFac*err;
 int hlf = screenSize.y/2;
 
-// Freq Visualizer Calculations
-float soundCoords = highRange[int(gl_FragCoord.x)*BUFSIZE/screenSize.x];
 float scaledSoundCoords = soundCoords*visScaleFac;
+
+// VARIABLES
+vec3 backgroundColor = vec3(0.1);
+vec3 higCol = backgroundColor;
 
 // Cursor distance calculations
 vec2 cursorDist = vec2(abs(cursorPos.x-gl_FragCoord.x), abs(gl_FragCoord.y-(-cursorPos.y)-screenSize.y));
@@ -75,26 +76,16 @@ void drawGrid()
     }
 }
 
-float bgCol()
-{
-    if (gl_FragCoord.x>10)
-    {
-        backgroundColor = vec3(amp);
-        return 0;
-    }
-    backgroundColor = vec3(0);
-}
-
 // Draw Cursor Function
 // Make cool effect by dividing
 void drawCursor()
 {
-    float maxDist = (32+sqrt(amp))*(sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y))/1024);
+    float maxDist = (32+sqrt(amp)*4)*(sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y))/1024);
     float fade = (maxDist+scaledSoundCoords-cursorDistNorm)/(maxDist+scaledSoundCoords);
     higCol = vec3(1/mix(0, 16, fade));
-    if (higCol.x < 0) higCol.x = 0;
-    if (higCol.y < 0) higCol.y = 0;
-    if (higCol.z < 0) higCol.z = 0;
+    if (higCol.x < 0) higCol.x = backgroundColor.x;
+    if (higCol.y < 0) higCol.y = backgroundColor.y;
+    if (higCol.z < 0) higCol.z = backgroundColor.z;
     if (higCol.x > 1) higCol.x = 1;
     if (higCol.y > 1) higCol.y = 1;
     if (higCol.z > 1) higCol.z = 1;

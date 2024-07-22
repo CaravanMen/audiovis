@@ -278,7 +278,6 @@ int main()
         fftwType freqData[SAMPDTL];
         fftwType amp;
         fftw_filter(audioBuffer, freqData, SAMPDTL, MINFREQ, MAXFREQ, amp);
-
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
