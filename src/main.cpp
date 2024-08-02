@@ -14,7 +14,7 @@
 #define BUFSIZE 3131
 #define MINFREQ 30
 #define MAXFREQ 16000
-#define SAMPLE_RATE 44100
+#define SAMPLE_RATE 44150
 // Simply set the number of rows to the ammount of the "selected" buffer space (buffer space that MINFREQ and MAXFREQ occupy) (MINFREQ < i < MAXFREQ)
 constexpr int SAMPDTL = (float)(MAXFREQ-MINFREQ)/(SAMPLE_RATE)*BUFSIZE;
 // The max value of a certain ammout of bytes as a binary string of all 1
@@ -170,6 +170,7 @@ bool initialize_pulse_audio()
 
     int err;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp__sink.monitor", "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
+
     
     if (err)
     {

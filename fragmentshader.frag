@@ -8,6 +8,7 @@ layout (binding = 0) buffer storageBuffer
 
 // UNIFORMS
 layout (location = 0) uniform ivec2 screenSize;
+float arat = sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y));
 layout (location = 1) uniform vec2 cursorPos;
 layout (location = 2) uniform float amp;
 uniform float err = 1;
@@ -24,38 +25,31 @@ int hlf = screenSize.y/2;
 float scaledSoundCoords = soundCoords*visScaleFac;
 
 // VARIABLES
-vec3 backgroundColor = vec3(0.1);
-vec3 higCol = backgroundColor;
+vec3 backgroundColor = vec3(0.01);
 
 // Cursor distance calculations
 vec2 cursorDist = vec2(abs(cursorPos.x-gl_FragCoord.x), abs(gl_FragCoord.y-(-cursorPos.y)-screenSize.y));
-float cursorDistNorm = sqrt(cursorDist.x*cursorDist.x+cursorDist.y*cursorDist.y);
+float cursorTan = sqrt((cursorDist.x*cursorDist.x)+(cursorDist.y*cursorDist.y));
 
+vec3 freqColor = vec3(0);
 // FUNCTIONS
 void freqVis()
 {
     vec3 color = vec3(mix(vec3(0, 1, 0), vec3(3, 0, 0), min(1, (sqrt(soundCoords/1024.0f)*colMag)))); // Optimize this (alongside a LOT of other things)
     vec3 colorOpp = vec3(1)-color;
-
-    if (gl_FragCoord.y > hlf && gl_FragCoord.y < hlf+scaledSoundCoords)
+    float visDist = abs(gl_FragCoord.y-hlf);
+    if (visDist < scaledSoundCoords+1)
     {
-        higCol = color;
-        float dist = abs(gl_FragCoord.y-scaledSoundCoords-hlf);
+        freqColor = color;
+        float dist = abs(visDist-scaledSoundCoords);
         if (dist<errScaled)
         {
-            higCol = colorOpp;
-        }
-    }else if (gl_FragCoord.y < hlf && gl_FragCoord.y > hlf-scaledSoundCoords)
-    {
-        higCol = color;
-        float dist = abs(hlf-gl_FragCoord.y-scaledSoundCoords);
-        if (dist<errScaled)
-        {
-            higCol = colorOpp;
+            freqColor = colorOpp;
         }
     }
 }
 // FIX THIS FUNCTION... grids don't work at different screen sizes.
+vec3 gridCol = vec3(0);
 void drawGrid()
 {
     int colDiv = 32;
@@ -68,32 +62,32 @@ void drawGrid()
 
     if (column <= 1)
     {
-        higCol += color;
+        gridCol += color;
     }
     if (row <= 1)
     {
-        higCol += color;
+        gridCol += color;
     }
 }
 
 // Draw Cursor Function
 // Make cool effect by dividing
+vec3 cursorCol = vec3(0);
 void drawCursor()
 {
-    float maxDist = (32+sqrt(amp)*4)*(sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y))/1024);
-    float fade = (maxDist+scaledSoundCoords-cursorDistNorm)/(maxDist+scaledSoundCoords);
-    higCol = vec3(1/mix(0, 16, fade));
-    if (higCol.x < 0) higCol.x = backgroundColor.x;
-    if (higCol.y < 0) higCol.y = backgroundColor.y;
-    if (higCol.z < 0) higCol.z = backgroundColor.z;
-    if (higCol.x > 1) higCol.x = 1;
-    if (higCol.y > 1) higCol.y = 1;
-    if (higCol.z > 1) higCol.z = 1;
+    float maxDist = (16+sqrt(amp/253)*52)*(arat/1024);
+    if (cursorTan <= maxDist)
+    {
+        float fade = (-0.1*maxDist)/(cursorTan-maxDist);
+        cursorCol = vec3(fade);
+    }
+
 }
 
 void main()
 {
     drawCursor();
     freqVis();
-    outColor = vec4(higCol, 1);
+    vec3 finColor = freqColor+cursorCol;
+    outColor = vec4(finColor, 1);
 }
