@@ -15,20 +15,17 @@ void filter_init(int bufferSize, int sampleRate)
     fftIn = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
     fftOut = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
 
-    plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
-    inverse_plan = fftwf_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_ESTIMATE);
-
-    // // Read wisdom
-    // if (fftw_import_wisdom_from_filename("wisdom"))
-    // {
-    //     plan = fftw_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE | FFTW_WISDOM_ONLY);
-    //     inverse_plan = fftw_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_EXHAUSTIVE | FFTW_WISDOM_ONLY);
-    // } else
-    // {
-    //     plan = fftw_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
-    //     inverse_plan = fftw_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_EXHAUSTIVE);
-    //     fftw_export_wisdom_to_filename("wisdom");
-    // }
+    // Read wisdom
+    if (fftwf_import_wisdom_from_filename("wisdom"))
+    {
+        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE | FFTW_WISDOM_ONLY);
+        inverse_plan = fftwf_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_EXHAUSTIVE | FFTW_WISDOM_ONLY);
+    } else
+    {
+        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
+        inverse_plan = fftwf_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_EXHAUSTIVE);
+        fftwf_export_wisdom_to_filename("wisdom");
+    }
 }
 bool fftw_filter(fftwType* source, fftwType* array, int rows, fftwType minFreq, fftwType maxFreq, fftwType &amp)
 {
