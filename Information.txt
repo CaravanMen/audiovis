@@ -1,0 +1,32 @@
+<---- High Ends
+
+
+
+
+
+
+<---- Mids
+
+
+
+
+
+
+
+
+<---- Low Ends
+
+
+
+
+
+
+<---- Pure Bass
+
+
+Kinda cool, eh?
+
+I don't actually know if its 100% accurate, but it seems so, and as such, imma jus roll with it! (I could measure the waves tho.)
+
+This was made in raw OpenGL, C++, Pulseaudio API (the linux audio server I think), and finally, the FFTW3 library. (I could do the Fourier Transformation research, but that'd take a while.... So I jus used an API)
+Shaders are technically loaded LIVE, and are seperate from the program, which is rlly cool, bc I can change them without recompiling!
