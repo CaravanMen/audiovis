@@ -29,19 +29,19 @@ bool initialize_pulse_audio()
     // Device initialization (This is PulseAudio; Linux (Ubuntu) sound server)
     // Consider using a more widely available API, such as PortAudio...
     pa_sample_spec sampleSpec;
-    sampleSpec.format = PA_SAMPLE_S32LE;    // 16-bit signed little-endian format
+    sampleSpec.format = PA_SAMPLE_S24_32LE;    // 16-bit signed little-endian format
     sampleSpec.rate = SAMPLE_RATE;            // Sample rate (Hz)
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
     bufferAttr.maxlength = (int32_t) BUFSIZE*2;
     bufferAttr.tlength = (int32_t) BUFSIZE;
-    bufferAttr.minreq = (int32_t) BUFSIZE;
+    bufferAttr.minreq = (int32_t) -1;
     bufferAttr.prebuf = (int32_t) -1;
-    bufferAttr.fragsize = (int32_t) -1;
+    bufferAttr.fragsize = (int32_t) BUFSIZE;
 
-    int err;
-    paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp__sink.monitor", "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
+    int err = NULL;
+    paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
 
     
     if (err)
@@ -221,13 +221,11 @@ int main()
         return -1;
     }
 
-    // generate a buffer object
+    // // generate a buffer object
     unsigned int ssboID;
-    glGenBuffers(1, &ssboID);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, (sizeof(fftwType)*SAMPDTL + sizeof(fftwType)), nullptr, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboID);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glCreateBuffers(1, &ssboID);
+    glNamedBufferStorage(ssboID, sizeof(fftwType)*SAMPDTL, 0, GL_DYNAMIC_STORAGE_BIT);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ssboID);
 
     // Final Initialization of GLFW
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -252,12 +250,11 @@ int main()
         }
         for (size_t i=0; i<SAMPDTL; i++)
         {
-            int32_t sample = buffer[i];
-            audioBuffer[i] = static_cast<fftwType>(sample)/maxVal();
+            audioBuffer[i] = static_cast<fftwType>(buffer[i])/8388607.0f;
         }
         fftwType freqData[SAMPDTL];
-        fftwType amp;
-        fftw_filter(audioBuffer, freqData, SAMPDTL, MINFREQ, MAXFREQ, amp);
+        fftwType amp = 0;
+        fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, amp);
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
