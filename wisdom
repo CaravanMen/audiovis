@@ -1,0 +1,6 @@
+(fftw-3.3.8 fftwf_wisdom #x9e7d4dee #xdb14fed1 #x34bf76a4 #xeb6e8fdf
+  (fftwf_codelet_t2fv_64_avx 0 #x1040 #x1040 #x0 #xc6ca45ce #xf08c5f4a #x61a53ade #xe5e374c8)
+  (fftwf_codelet_t3bv_32_avx 0 #x1040 #x1040 #x0 #xd86f0fcc #x804581bb #x5ccfdfba #x14108c49)
+  (fftwf_codelet_n2fv_16_avx 0 #x1040 #x1040 #x0 #xf246dd1d #x433be1dd #x669fbc87 #xe433ec82)
+  (fftwf_codelet_n2bv_32_avx 0 #x1040 #x1040 #x0 #x9eb2edbf #x922114ae #xb3ba36b9 #x31dd942c)
+)

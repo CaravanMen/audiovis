@@ -1,0 +1,1 @@
+char* read_file(const char* fileName, int &size);
