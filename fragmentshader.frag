@@ -14,7 +14,7 @@ float arat = sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y));
 layout (location = 1) uniform vec2 cursorPos;
 layout (location = 2) uniform float amp;
 uniform float err = 1;
-uniform float visMag = 3;
+uniform float visMag = 1;
 uniform float colMag = 2;
 // OUT
 layout (location = 0, index = 0) out vec4 outColor;
@@ -30,8 +30,8 @@ float scaledSoundCoords = soundCoords*visScaleFac;
 vec3 backgroundColor = vec3(0.01);
 
 // Cursor distance calculations
-vec2 cursorDist = vec2(abs(cursorPos.x-gl_FragCoord.x), abs(gl_FragCoord.y-(-cursorPos.y)-screenSize.y));
-float cursorTan = sqrt((cursorDist.x*cursorDist.x)+(cursorDist.y*cursorDist.y));
+vec2 cursorDist = vec2(abs(screenSize.x/2-gl_FragCoord.x), abs(gl_FragCoord.y+hlf-screenSize.y));
+float cursorTan = cursorDist.y;
 
 vec3 freqColor = vec3(0);
 // FUNCTIONS
@@ -78,6 +78,8 @@ vec3 cursorCol = vec3(0);
 void drawCursor()
 {
     float offset = soundCoords;
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
     float maxDist = (16+(amp)*2/14)*(arat/1024.0f);
     
     if (cursorTan <= maxDist)
@@ -93,17 +95,27 @@ void background()
 {
     int index = int(gl_FragCoord.x/screenSize.x)*256;
     bgColor = vec3(soundCoords*soundCoords/20000);
+=======
+=======
+>>>>>>> Stashed changes
+    float maxDist = (16+(highRange[1]*8192)/6)*(arat/1024.0f);
+    float fade = (-0.01f*(maxDist+cursorTan))/(cursorTan-maxDist-scaledSoundCoords);
+    float lowRange = (highRange[0]+highRange[1])/2*8192;
+    float lowFade = (0.1*(lowRange+soundCoords))/(cursorTan-maxDist-scaledSoundCoords);
+    cursorCol = vec3(fade+lowFade, fade-lowFade, fade-lowFade);
+    if (cursorCol.x < 0) cursorCol.x = 0.0f;
+    if (cursorCol.y < 0) cursorCol.y = 0.0f;
+    if (cursorCol.z < 0) cursorCol.z = 0.0f;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 }
 
 void main()
 {
-    background();
     drawCursor();
     freqVis();
     vec3 finColor = (freqColor+cursorCol);
-    if (finColor == vec3(0))
-    {
-        finColor = bgColor;
-    }
     outColor = vec4(finColor, 1);
 }
