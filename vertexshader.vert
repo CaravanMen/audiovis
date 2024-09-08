@@ -1,8 +1,3 @@
-// Buffers
-layout (binding = 0) buffer storageBuffer
-{
-    float highRange[BUFSIZE];
-};
 
 void main()
 {

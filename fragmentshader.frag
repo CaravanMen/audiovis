@@ -1,7 +1,7 @@
 #define SCALE 512
 
 // Buffers
-layout (binding = 0) buffer storageBuffer
+layout (binding = 0) uniform storageBuffer
 {
     float highRange[BUFSIZE];
 };
@@ -12,14 +12,14 @@ int hlf = screenSize.y/2;
 
 float arat = sqrt((screenSize.x*screenSize.x)+(screenSize.y*screenSize.y));
 layout (location = 1) uniform vec2 cursorPos;
-layout (location = 2) uniform float amp;
+layout (location = 2) uniform float amp = 0;
 uniform float err = 1;
 uniform float visMag = 1;
 uniform float colMag = 2;
 // OUT
 layout (location = 0, index = 0) out vec4 outColor;
 // Freq Visualizer Calculations
-float soundCoords = highRange[int(gl_FragCoord.x)*BUFSIZE/screenSize.x];
+float soundCoords = highRange[int(gl_FragCoord.x)*BUFSIZE/screenSize.x]*8192;
 float visScaleFac = (screenSize.y/1024.0f)*visMag;
 float errScaled = visScaleFac*err;
 
@@ -78,14 +78,19 @@ vec3 cursorCol = vec3(0);
 void drawCursor()
 {
     float offset = soundCoords;
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
     float maxDist = (16+(amp)*2/14)*(arat/1024.0f);
     
+=======
+    float maxDist = (16+(amp*8192)/2)*(arat/1024.0f);
+>>>>>>> f4cc5f76e6061bc1176204bb4d5eb931a051af74
     if (cursorTan <= maxDist)
     {
-        float fade = (-0.01f*(maxDist+cursorTan+highRange[0]*2))/(cursorTan-maxDist);
-        cursorCol = vec3(fade);
+        float fade = (-0.01f*(maxDist+cursorTan))/(cursorTan-maxDist);
+        float lowRange = (highRange[0]+highRange[1])/2*8192;
+        cursorCol = vec3(fade-(0.01*lowRange*lowRange)/(cursorTan-maxDist-lowRange), fade, fade);
     }
 }
 
