@@ -35,10 +35,10 @@ bool initialize_pulse_audio()
 
     pa_buffer_attr bufferAttr;
     bufferAttr.maxlength = (int32_t) BUFSIZE*2;
-    bufferAttr.tlength = (int32_t) BUFSIZE;
+    bufferAttr.tlength = (int32_t) -1;
     bufferAttr.minreq = (int32_t) -1;
     bufferAttr.prebuf = (int32_t) -1;
-    bufferAttr.fragsize = (int32_t) BUFSIZE;
+    bufferAttr.fragsize = (int32_t) -1;
 
     int err = NULL;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
@@ -66,11 +66,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     fheight = height;
     glViewport(0, 0, width, height);
     glUniform2i(0, width, height);
-}
-
-void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    glUniform2f(1, (float)xpos, (float)ypos);
 }
 
 // Startup Functions
@@ -205,7 +200,6 @@ int main()
     glfwMakeContextCurrent(window);
     // Set window callbacks
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, cursor_pos_callback);
     // load opengl
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -235,10 +229,8 @@ int main()
     int error;
     // Use the shaderProgram
     glUseProgram(shaderProgram);
-
     glEnable(GL_CLEAR);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glUniform2i(0, WIDTH, HEIGHT);
     // Main while loop
     while (!glfwWindowShouldClose(window))
     {
@@ -261,7 +253,7 @@ int main()
         // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
-        glUniform1f(2, amp);
+        glUniform1f(1, amp);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);

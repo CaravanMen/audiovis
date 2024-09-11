@@ -46,16 +46,15 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
     for (size_t i = 0; i <= max-min; i++)
     {
         int index = min+i;
-        fftwType real = fftOut[index][0]/fftSize;
-        fftwType imag = fftOut[index][1]/fftSize;
+        fftwType real = fftOut[index][0];
+        fftwType imag = fftOut[index][1];
         fftwType sect = sqrt((real*real)+(imag*imag));
-        if (sect > amp)
-        {
-            amp = sect;
-        }
-        array[i] = sect;    
+
+        amp += sect/fftSize;
+        array[i] = sect/fftSize;    
     }
 
+    amp /= max-min;
     return 1;
 }
 
