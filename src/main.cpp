@@ -29,7 +29,7 @@ bool initialize_pulse_audio()
     // Device initialization (This is PulseAudio; Linux (Ubuntu) sound server)
     // Consider using a more widely available API, such as PortAudio...
     pa_sample_spec sampleSpec;
-    sampleSpec.format = PA_SAMPLE_S24_32LE;    // 16-bit signed little-endian format
+    sampleSpec.format = PA_SAMPLE_S32LE;    // 16-bit signed little-endian format
     sampleSpec.rate = SAMPLE_RATE;            // Sample rate (Hz)
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
@@ -277,7 +277,7 @@ int main()
         for (int i = 0; i<SAMPDTL; i++)
         {
             int32_t sample = buffer[i];
-            retBuffer[i] = ((float)buffer[i])/8388607.0f;
+            retBuffer[i] = ((float)buffer[i])/2147483647.0f;
         }
         GLfloat out[SAMPDTL];
         fftw_filter(retBuffer, out, MINFREQ, MAXFREQ);
