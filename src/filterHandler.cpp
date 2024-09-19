@@ -42,6 +42,7 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
     }
     // Run the fft filter
     fftwf_execute(plan);
+
     // Output filter and find loudest part
     for (size_t i = 0; i <= max-min; i++)
     {
@@ -49,12 +50,20 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
         fftwType sect = sqrt((real*real)+(imag*imag));
-
-        amp += sect/fftSize;
-        array[i] = sect/fftSize;    
+        if (&amp != nullptr)
+        {
+            amp += sect/fftSize;
+        }
+        
+        if (array != nullptr)
+        {
+            array[i] = sect/fftSize;
+        }
     }
-
-    amp /= max-min;
+    if (&amp != nullptr)
+    {
+        amp /= max-min;
+    }
     return 1;
 }
 

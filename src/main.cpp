@@ -230,7 +230,8 @@ int main()
     // Use the shaderProgram
     glUseProgram(shaderProgram);
     glEnable(GL_CLEAR);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    int glErr = NULL;
     // Main while loop
     while (!glfwWindowShouldClose(window))
     {
@@ -246,7 +247,10 @@ int main()
         }
         fftwType freqData[SAMPDTL];
         fftwType amp = 0;
+        fftwType subBassAmp = 0;
+        fftwType midBassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, amp);
+        fftw_filter(audioBuffer, nullptr, 45, 120, subBassAmp);
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -254,13 +258,15 @@ int main()
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
         glUniform1f(1, amp);
+        glUniform1f(2, subBassAmp);
+        glUniform1f(3, midBassAmp); 
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
         // Error checking
-        int glErr = glGetError();
+        glErr = glGetError();
         while (glErr != GL_NO_ERROR)
         {
             char msg[1024];
