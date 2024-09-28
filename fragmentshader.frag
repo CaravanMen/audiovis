@@ -11,6 +11,9 @@ layout (Location = 0) uniform ivec2 screen_scale;
 layout (Location = 1) uniform float max_amp;
 layout (Location = 2) uniform float bass_amp;
 
+layout (Location = 3) uniform int ringCount = 1;
+layout (Location = 4) uniform float dist[] = {16};
+
 // Output color
 out vec4 outColor;
 
@@ -29,26 +32,34 @@ void DrawCircle()
     // ------- Radius Calculations -------
     // Calculate radius of the circle
     // Create index (based on conversion 2pi=1024, hence 2pi/1024)
-    int index = 1024-int((acos(distance_xy.y/distance_from_center))*(BUFSIZE/3.141592653589897f))-1;
-    float amp = ((highRange[index]*42.0f)*(48000/1200));
-    float rad = 100+(amp*16);
-    float den = distance_from_center-(max_amp*512*128)-(rad);
-    float inverseFac = bass_amp*512;
+    const int index = 1024-int((acos(distance_xy.y/distance_from_center))*(BUFSIZE/3.141592653589897f))-1;
+    const float amp = ((highRange[index]*42.0f)*(48000/1200));
+    const float rad = 100+(amp*16);
+    const float den = distance_from_center-(max_amp*512*128)-(rad);
+
+    // Red Background Settings
+    const float redInverseFac = bass_amp*128;
+    const float redExpMult = 1.25f;
+    const float redExpVal = redExpMult*exp(redInverseFac)-redExpMult;
 
     // Colour outputting
-    if (abs(distance_from_center) > abs(den))
+    if (abs(distance_from_center) > den)
     {
-        outColor = vec4(sqrt(amp))/abs(den);
-        outColor += vec4((bass_amp*2048), 0, (max_amp*1024), 1)/abs(den-16);
-        // outColor += (vec4)
-        // I'm a ghost 2:00
-        if (inverseFac >= 0.7f)
+        outColor = vec4(1)/abs(den);
+        // Render outer rings
+        for (int i=0; i<ringCount; i++)
         {
-            outColor.r = mix(outColor.r, ((den)/256)-outColor.r, exp(inverseFac-2)*1.25);
+            outColor+=vec4((max_amp*1024), 0, (max_amp*1024), 1)/abs(den-dist[i]);
         }
+        // I'm a ghost 2:00
+        // if (inverseFac >= 0.7f)
+        // {
+            outColor.r = mix(outColor.r, ((den/256))-outColor.r, redExpVal);
+        // }
         // NOT WORKING - NEEDS FIXING:
         // outColor += mix(vec4(mix(0, 1, exp(inverseFac-2)*1.25), mix(1, 0, exp(inverseFac-2)*1.25), 0, 1), vec4(mix(3, 0, exp(inverseFac-2)*1.25), mix(0, 3, exp(inverseFac-2)*1.25), 0, 1), sqrt(amp))/abs(den);
     }
+
 }
 
 void main()

@@ -11,6 +11,19 @@
 #include <pulse/simple.h>
 #include <pulse/error.h>
 
+// Time stuff
+#include <chrono>
+using namespace std::chrono;
+#define timeNow system_clock::now()
+time_point<system_clock> lastTime, currTime;
+duration<float> _duration;
+float deltaTime;
+
+static inline void initClock()
+{
+    currTime=timeNow;
+} 
+
 // Own files
 #include <main.h>
 #include <fileHandler.h>
@@ -40,7 +53,7 @@ bool initialize_pulse_audio()
     bufferAttr.prebuf = (int32_t) -1;
     bufferAttr.fragsize = (int32_t) -1;
 
-    int err = NULL;
+    int err;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
 
     
@@ -231,10 +244,18 @@ int main()
     glUseProgram(shaderProgram);
     glEnable(GL_CLEAR);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    int glErr = NULL;
+    int glErr;
     // Main while loop
+    glUniform2i(0, WIDTH, HEIGHT);
+    // Rings stuff
+    int rings = 1;
+    float dist[rings] = {16};
+
+    // System clock stuff
+    initClock();
     while (!glfwWindowShouldClose(window))
     {
+        lastTime = currTime;
         // PULSEAUDIO STUFF
         int err;
         if (pa_simple_read(paConn, buffer, sizeof(buffer), &error) < 0) {
@@ -248,9 +269,9 @@ int main()
         fftwType freqData[SAMPDTL];
         fftwType amp = 0;
         fftwType subBassAmp = 0;
-        fftwType midBassAmp = 0;
-        fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, amp);
-        fftw_filter(audioBuffer, nullptr, 45, 120, subBassAmp);
+        fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
+        fftw_filter(audioBuffer, nullptr, 120, MAXFREQ, &amp);
+        fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -259,7 +280,16 @@ int main()
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
         glUniform1f(1, amp);
         glUniform1f(2, subBassAmp);
-        glUniform1f(3, midBassAmp); 
+
+        // Calculate rings
+        glUniform1f(3, rings);
+        glUniform1f(4, *dist);
+        for (int i=0; i<rings; i++)
+        {
+            dist[i] += 1000*deltaTime;
+
+        }
+        // End calculation
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -300,7 +330,12 @@ int main()
             printf("OpenGL Error: [0x%x], '%s';\n", glErr, msg);
             glErr = glGetError();
         }
-        
+
+        // Deltatime stuff
+        currTime=timeNow;
+        _duration = currTime-lastTime;
+        float deltaTime = _duration.count();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

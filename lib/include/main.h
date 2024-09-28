@@ -1,7 +1,7 @@
 #define PA_DEV_NAME ".monitor"
 #define SAMPDTL 1024
 #define MINFREQ 0
-#define MAXFREQ 1200    
+#define MAXFREQ 1200
 #define SAMPLE_RATE 48000
 #define CHANNELS 1
 #define WIDTH 512

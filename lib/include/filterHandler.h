@@ -7,5 +7,5 @@ typedef fftwf_complex fftwComplex;
 typedef fftwf_plan fftwPlan;
 
 void filter_init(int sampeSize, int sampleRate);
-bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, fftwType minFreq, fftwType maxFreq, fftwType &amp);
+bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, fftwType minFreq, fftwType maxFreq, fftwType* amp);
 void filter_end();

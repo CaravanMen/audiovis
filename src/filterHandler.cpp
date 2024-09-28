@@ -28,10 +28,11 @@ void filter_init(int bufferSize, int sampleRate)
     //     fftwf_export_wisdom_to_filename("wisdom");
     // }
 }
-bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType maxFreq, fftwType &amp)
+bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType maxFreq, fftwType* amp)
 {
     int min = minFreq*fftSize/fftSampleRate;
     int max = maxFreq*fftSize/fftSampleRate;
+
     for (size_t i = 0; i < fftSize; i++)
     {
         fftIn[i][1] = 0;
@@ -50,9 +51,9 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
         fftwType sect = sqrt((real*real)+(imag*imag));
-        if (&amp != nullptr)
+        if (amp != nullptr)
         {
-            amp += sect/fftSize;
+            *amp += sect/fftSize;
         }
         
         if (array != nullptr)
@@ -60,9 +61,12 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
             array[i] = sect/fftSize;
         }
     }
-    if (&amp != nullptr)
+    if (&array != nullptr)
     {
-        amp /= max-min;
+        if (amp != nullptr)
+        {
+            *amp /= max-min;
+        }
     }
     return 1;
 }
