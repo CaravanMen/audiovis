@@ -70,10 +70,73 @@ void DrawCircle()
         // outColor += mix(vec4(mix(0, 1, exp(inverseFac-2)*1.25), mix(1, 0, exp(inverseFac-2)*1.25), 0, 1), vec4(mix(3, 0, exp(inverseFac-2)*1.25), mix(0, 3, exp(inverseFac-2)*1.25), 0, 1), sqrt(amp))/abs(den);
     }
 
+<<<<<<< HEAD
+=======
+    if (column <= 1)
+    {
+        gridCol += color;
+    }
+    if (row <= 1)
+    {
+        gridCol += color;
+    }
+}
+
+// Draw Cursor Function
+// Make cool effect by dividing
+vec3 cursorCol = vec3(0);
+void drawCursor()
+{
+    float offset = soundCoords;
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+    float maxDist = (16+(amp)*2/14)*(arat/1024.0f);
+    
+=======
+    float maxDist = (16+(amp*8192)/2)*(arat/1024.0f);
+>>>>>>> f4cc5f76e6061bc1176204bb4d5eb931a051af74
+    if (cursorTan <= maxDist)
+    {
+        float fade = (-0.01f*(maxDist+cursorTan))/(cursorTan-maxDist);
+        float lowRange = (highRange[0]+highRange[1])/2*8192;
+        cursorCol = vec3(fade-(0.01*lowRange*lowRange)/(cursorTan-maxDist-lowRange), fade, fade);
+    }
+}
+
+// Draw background
+vec3 bgColor = vec3(0);
+void background()
+{
+    int index = int(gl_FragCoord.x/screenSize.x)*256;
+    bgColor = vec3(soundCoords*soundCoords/20000);
+=======
+=======
+>>>>>>> Stashed changes
+    float maxDist = (16+(highRange[1]*8192)/6)*(arat/1024.0f);
+    float fade = (-0.01f*(maxDist+cursorTan))/(cursorTan-maxDist-scaledSoundCoords);
+    float lowRange = (highRange[0]+highRange[1])/2*8192;
+    float lowFade = (0.1*(lowRange+soundCoords))/(cursorTan-maxDist-scaledSoundCoords);
+    cursorCol = vec3(fade+lowFade, fade-lowFade, fade-lowFade);
+    if (cursorCol.x < 0) cursorCol.x = 0.0f;
+    if (cursorCol.y < 0) cursorCol.y = 0.0f;
+    if (cursorCol.z < 0) cursorCol.z = 0.0f;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+>>>>>>> remotes/origin/main
 }
 
 void main()
 {
+<<<<<<< HEAD
     // Draw Circle
     DrawCircle();
+=======
+    drawCursor();
+    freqVis();
+    vec3 finColor = (freqColor+cursorCol);
+    outColor = vec4(finColor, 1);
+>>>>>>> remotes/origin/main
 }

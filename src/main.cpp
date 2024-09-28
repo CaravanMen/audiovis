@@ -58,7 +58,7 @@ bool initialize_pulse_audio()
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
 
     
-    if (err)
+    if (err)    
     {
         fprintf(stderr, "[ERR] pa_simple_new() failed: %s\n", pa_strerror(err));
         return 0;  
