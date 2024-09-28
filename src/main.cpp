@@ -10,6 +10,7 @@
 #include <thread>
 #include <pulse/simple.h>
 #include <pulse/error.h>
+#include <list>
 
 // Time stuff
 #include <chrono>
@@ -248,14 +249,21 @@ int main()
     // Main while loop
     glUniform2i(0, WIDTH, HEIGHT);
     // Rings stuff
-    int rings = 1;
-    float dist[rings] = {16};
+    int ringCount = 128;
+    float dist[ringCount];
+    unsigned int rads;
+    glCreateBuffers(1, &rads);
+    glNamedBufferStorage(rads, sizeof(float)*ringCount, 0, GL_DYNAMIC_STORAGE_BIT);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, rads);
 
     // System clock stuff
     initClock();
+    float timePassed = 0;
+
     while (!glfwWindowShouldClose(window))
     {
         lastTime = currTime;
+        timePassed += deltaTime;
         // PULSEAUDIO STUFF
         int err;
         if (pa_simple_read(paConn, buffer, sizeof(buffer), &error) < 0) {
@@ -282,12 +290,24 @@ int main()
         glUniform1f(2, subBassAmp);
 
         // Calculate rings
-        glUniform1f(3, rings);
-        glUniform1f(4, *dist);
-        for (int i=0; i<rings; i++)
+        glUniform1i(3, ringCount);
+        glNamedBufferSubData(rads, 0, sizeof(float)*ringCount, dist);
+        for (int i=0; i<ringCount; i++)
         {
-            dist[i] += 1000*deltaTime;
-
+            if (dist[i] != NULL)
+            {
+                dist[i]+=(128*deltaTime);
+            }
+        }
+        if (timePassed >= 0.24f && subBassAmp >= 0.006f)
+        {
+            for (int i=ringCount-1; i>0; i--)
+            {
+                dist[i]=dist[i-1];
+            }
+            dist[0] = 16+(amp*512*128);
+            
+            timePassed = 0;
         }
         // End calculation
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -334,7 +354,7 @@ int main()
         // Deltatime stuff
         currTime=timeNow;
         _duration = currTime-lastTime;
-        float deltaTime = _duration.count();
+        deltaTime = _duration.count();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

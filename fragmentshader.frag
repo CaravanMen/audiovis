@@ -6,13 +6,17 @@ layout (binding = 0) uniform storageBuffer
     float highRange[BUFSIZE];
 };
 
+layout (binding = 1) uniform ringBuffer
+{
+    float dist[128];
+};
+
 // Collecting uniforms
 layout (Location = 0) uniform ivec2 screen_scale;
 layout (Location = 1) uniform float max_amp;
 layout (Location = 2) uniform float bass_amp;
 
-layout (Location = 3) uniform int ringCount = 1;
-layout (Location = 4) uniform float dist[] = {16};
+layout (Location = 3) uniform int ringCount;
 
 // Output color
 out vec4 outColor;
@@ -34,8 +38,9 @@ void DrawCircle()
     // Create index (based on conversion 2pi=1024, hence 2pi/1024)
     const int index = 1024-int((acos(distance_xy.y/distance_from_center))*(BUFSIZE/3.141592653589897f))-1;
     const float amp = ((highRange[index]*42.0f)*(48000/1200));
-    const float rad = 100+(amp*16);
-    const float den = distance_from_center-(max_amp*512*128)-(rad);
+    const float rad = 100+(amp*8);
+    const float den = distance_from_center-(rad);
+    const float main_dist = distance_from_center-(rad)-(max_amp*512*128);
 
     // Red Background Settings
     const float redInverseFac = bass_amp*128;
@@ -45,16 +50,21 @@ void DrawCircle()
     // Colour outputting
     if (abs(distance_from_center) > den)
     {
-        outColor = vec4(1)/abs(den);
+        outColor = vec4(1)/abs(main_dist);
         // Render outer rings
-        for (int i=0; i<ringCount; i++)
-        {
-            outColor+=vec4((max_amp*1024), 0, (max_amp*1024), 1)/abs(den-dist[i]);
-        }
+        // Ring 1
+        outColor+=vec4((bass_amp*2048), 0, (max_amp*1024), 1)/abs(main_dist-16);
         // I'm a ghost 2:00
         // if (inverseFac >= 0.7f)
         // {
-            outColor.r = mix(outColor.r, ((den/256))-outColor.r, redExpVal);
+            outColor.r += ((den/1024))-outColor.r*redExpVal;
+        for (int i=0; i<ringCount; i++)
+        {
+            if (dist[i] > main_dist-16 && dist[i] != 0)
+            {
+                outColor+=vec4(1, 0, 0, 1)/abs(den-dist[i]);
+            }
+        }
         // }
         // NOT WORKING - NEEDS FIXING:
         // outColor += mix(vec4(mix(0, 1, exp(inverseFac-2)*1.25), mix(1, 0, exp(inverseFac-2)*1.25), 0, 1), vec4(mix(3, 0, exp(inverseFac-2)*1.25), mix(0, 3, exp(inverseFac-2)*1.25), 0, 1), sqrt(amp))/abs(den);
