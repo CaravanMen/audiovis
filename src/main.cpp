@@ -43,16 +43,16 @@ bool initialize_pulse_audio()
     // Device initialization (This is PulseAudio; Linux (Ubuntu) sound server)
     // Consider using a more widely available API, such as PortAudio...
     pa_sample_spec sampleSpec;
-    sampleSpec.format = PA_SAMPLE_S24_32LE;    // 16-bit signed little-endian format
+    sampleSpec.format = PA_SAMPLE_S32LE;    // 16-bit signed little-endian format
     sampleSpec.rate = SAMPLE_RATE;            // Sample rate (Hz)
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (int32_t) BUFSIZE*2;
-    bufferAttr.tlength = (int32_t) -1;
+    bufferAttr.maxlength = (int32_t) BUFSIZE;
+    bufferAttr.tlength = (int32_t) BUFSIZE;
     bufferAttr.minreq = (int32_t) -1;
     bufferAttr.prebuf = (int32_t) -1;
-    bufferAttr.fragsize = (int32_t) -1;
+    bufferAttr.fragsize = (int32_t) pa_usec_to_bytes(1000, &sampleSpec);
 
     int err;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
@@ -249,7 +249,7 @@ int main()
     // Main while loop
     glUniform2i(0, WIDTH, HEIGHT);
     // Rings stuff
-    int ringCount = 2;
+    int ringCount = 16;
     float dist[ringCount];
     unsigned int rads;
     glCreateBuffers(1, &rads);
@@ -270,16 +270,18 @@ int main()
             fprintf(stderr, "[ERR] pa_simple_read() failed: %s\n", pa_strerror(error));
             break;
         }
-        for (size_t i=0; i<SAMPDTL; i++)
+        for (size_t i=0; i<=SAMPDTL; i++)
         {
-            audioBuffer[i] = static_cast<fftwType>(buffer[i])/8388607.0f;
+            audioBuffer[i] = static_cast<fftwType>(buffer[i])/2147483647.0f;
         }
         fftwType freqData[SAMPDTL];
         fftwType amp = 0;
         fftwType subBassAmp = 0;
+        fftwType bassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
         fftw_filter(audioBuffer, nullptr, 120, MAXFREQ, &amp);
         fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
+        fftw_filter(audioBuffer, nullptr, 60, 250, &bassAmp);
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -294,12 +296,12 @@ int main()
         glNamedBufferSubData(rads, 0, sizeof(float)*ringCount, dist);
         for (int i=0; i<ringCount; i++)
         {
-            if (dist[i] >= 0)
+            if (dist[i] > 0)
             {
-                dist[i]+=(128*deltaTime);
+                dist[i]+=(1024*deltaTime);
             }
         }
-        if (timePassed >= 0.24f && subBassAmp >= 0.006f)
+        if (timePassed >= 0.1f && bassAmp > 0.003f)
         {
             for (int i=ringCount-1; i>0; i--)
             {

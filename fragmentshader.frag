@@ -57,17 +57,16 @@ void DrawCircle()
         // I'm a ghost 2:00
         // if (inverseFac >= 0.7f)
         // {
-            outColor.r += ((den/1024))-outColor.r*redExpVal;
-        for (int i=0; i<ringCount; i++)
-        {
-            if (dist[i] > main_dist-16 && dist[i] != 0)
-            {
-                outColor+=vec4(1, 0, 0, 1)/abs(den-dist[i]);
-            }
-        }
         // }
         // NOT WORKING - NEEDS FIXING:
-        // outColor += mix(vec4(mix(0, 1, exp(inverseFac-2)*1.25), mix(1, 0, exp(inverseFac-2)*1.25), 0, 1), vec4(mix(3, 0, exp(inverseFac-2)*1.25), mix(0, 3, exp(inverseFac-2)*1.25), 0, 1), sqrt(amp))/abs(den);
+    }
+    outColor.r = mix(outColor.r, ((den/512))-outColor.r, redExpVal);
+    for (int i=0; i<ringCount; i++)
+    {
+        if (dist[i] > main_dist-16 && dist[i] > 0)
+        {
+            outColor+=vec4(0, 0, 1, 1)/abs(den-dist[i]);
+        }
     }
 }
 
