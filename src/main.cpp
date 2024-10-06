@@ -249,7 +249,7 @@ int main()
     // Main while loop
     glUniform2i(0, WIDTH, HEIGHT);
     // Rings stuff
-    int ringCount = 128;
+    int ringCount = 2;
     float dist[ringCount];
     unsigned int rads;
     glCreateBuffers(1, &rads);
@@ -294,7 +294,7 @@ int main()
         glNamedBufferSubData(rads, 0, sizeof(float)*ringCount, dist);
         for (int i=0; i<ringCount; i++)
         {
-            if (dist[i] != NULL)
+            if (dist[i] >= 0)
             {
                 dist[i]+=(128*deltaTime);
             }
