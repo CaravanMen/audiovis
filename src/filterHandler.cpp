@@ -19,7 +19,7 @@ void filter_init(int bufferSize, int sampleRate)
     // For testing purposes
     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
     inverse_plan = fftwf_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_ESTIMATE);
-    // // More Quality (Read Wisdom)
+    // More Quality (Read Wisdom)
     // if (fftwf_import_wisdom_from_filename("wisdom"))
     // {
     //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE | FFTW_WISDOM_ONLY);
@@ -33,8 +33,8 @@ void filter_init(int bufferSize, int sampleRate)
 }
 bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType maxFreq)
 {
-    int min = floor(minFreq*fftSize/fftSampleRate);
-    int max = floor(maxFreq*fftSize/fftSampleRate);
+    int min = minFreq*fftSize/fftSampleRate;
+    int max = maxFreq*fftSize/fftSampleRate;
     for (size_t i = 0; i < fftSize; i++)
     {
         fftIn[i][0] = source[i];

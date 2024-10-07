@@ -1,4 +1,3 @@
-
 #include <malloc.h>
 #include <memory.h>
 #include <glad/glad.h>
@@ -34,11 +33,11 @@ bool initialize_pulse_audio()
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (int32_t) BUFSIZE*2;
-    bufferAttr.tlength = (int32_t) BUFSIZE;
-    bufferAttr.minreq = (int32_t) BUFSIZE;
-    bufferAttr.prebuf = (int32_t) -1;
-    bufferAttr.fragsize = (int32_t) -1;
+    bufferAttr.maxlength = (uint32_t) -1;
+    bufferAttr.tlength = (uint32_t) SAMPDTL;
+    bufferAttr.minreq = (uint32_t) -1;
+    bufferAttr.prebuf = (uint32_t) SAMPDTL;
+    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1666, &sampleSpec);
 
     int err = 0;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
@@ -258,7 +257,6 @@ int main()
     glUseProgram(shaderProgram);
     glUniform2f(1, (float)WIDTH, (float)HEIGHT);
     glDepthRange(0, 0.1);
-    glUniform1f(2, (float)SAMPDTL);
     glEnable(GL_CLEAR);
     // glEnable(GL_DEPTH_TEST);
     glClearColor(0, 0, 0, 1.0f);
@@ -276,7 +274,6 @@ int main()
         GLfloat retBuffer[SAMPDTL];
         for (int i = 0; i<SAMPDTL; i++)
         {
-            int32_t sample = buffer[i];
             retBuffer[i] = ((float)buffer[i])/2147483647.0f;
         }
         GLfloat out[SAMPDTL];

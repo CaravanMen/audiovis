@@ -3,8 +3,6 @@
 layout (binding = 0) uniform SSBO { float array[1024]; };
 // In
 layout (location=1) uniform vec2 u_resolution;
-layout (location=2) uniform float size;
-
 
 // Uniforms
 uniform float u_thickness = 10;
