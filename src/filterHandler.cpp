@@ -18,7 +18,7 @@ void filter_init(int bufferSize, int sampleRate)
     // For testing purposes
     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
     // More Quality
-    // // Read wisdom
+    // Read wisdom
     // if (fftwf_import_wisdom_from_filename("wisdom"))
     // {
     //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);

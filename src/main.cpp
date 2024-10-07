@@ -33,7 +33,7 @@ static inline void initClock()
  * NOTE
  * * Possibly make audiobuffer only store raw buffer data.
 **/
-fftwType audioBuffer[BUFSIZE];
+fftwType audioBuffer[SAMPDTL];
 // Global Variables
 int fwidth, fheight;
 pa_simple* paConn = NULL;
@@ -48,13 +48,13 @@ bool initialize_pulse_audio()
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (int32_t) BUFSIZE;
-    bufferAttr.tlength = (int32_t) BUFSIZE;
-    bufferAttr.minreq = (int32_t) -1;
-    bufferAttr.prebuf = (int32_t) -1;
-    bufferAttr.fragsize = (int32_t) pa_usec_to_bytes(1000, &sampleSpec);
+    bufferAttr.maxlength = (uint32_t) BUFSIZE;
+    bufferAttr.tlength = (uint32_t) SAMPDTL;
+    bufferAttr.minreq = (uint32_t) -1;
+    bufferAttr.prebuf = (uint32_t) SAMPDTL;
+    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1666, &sampleSpec);
 
-    int err;
+    int err=0;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
 
     
@@ -265,7 +265,7 @@ int main()
         lastTime = currTime;
         timePassed += deltaTime;
         // PULSEAUDIO STUFF
-        int err;
+        int err=0;
         if (pa_simple_read(paConn, buffer, sizeof(buffer), &error) < 0) {
             fprintf(stderr, "[ERR] pa_simple_read() failed: %s\n", pa_strerror(error));
             break;
@@ -279,9 +279,9 @@ int main()
         fftwType subBassAmp = 0;
         fftwType bassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
-        fftw_filter(audioBuffer, nullptr, 120, MAXFREQ, &amp);
+        fftw_filter(audioBuffer, nullptr, 60, MAXFREQ, &amp);
         fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
-        fftw_filter(audioBuffer, nullptr, 60, 250, &bassAmp);
+        fftw_filter(audioBuffer, nullptr, 120, 150, &bassAmp);
         // RENDERING STUFF
         glClear(GL_COLOR_BUFFER_BIT);
 
