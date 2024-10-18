@@ -16,18 +16,21 @@ void filter_init(int bufferSize, int sampleRate)
     fftOut = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
 
     // For testing purposes
-    plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
-    // More Quality
-    // Read wisdom
-    // if (fftwf_import_wisdom_from_filename("wisdom"))
-    // {
-    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
-    // } else
-    // {
-    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
-    //     fftwf_export_wisdom_to_filename("wisdom");
-    // }
+    // plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    
+    // Generate wisdom for more quality
+    if (fftwf_import_wisdom_from_filename("wisdom"))
+    {
+        // If wisdom already exists, use it
+        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
+    } else
+    {
+        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
+        fftwf_export_wisdom_to_filename("wisdom");
+    }
 }
+
 bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType maxFreq, fftwType* amp)
 {
     int min = minFreq*fftSize/fftSampleRate;
@@ -43,31 +46,25 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
     }
     // Run the fft filter
     fftwf_execute(plan);
-
     // Output filter and find loudest part
     for (size_t i = 0; i <= max-min; i++)
     {
         int index = min+i;
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
-        fftwType sect = sqrt((real*real)+(imag*imag));
-        if (amp != nullptr)
-        {
-            *amp += sect/fftSize;
-        }
+        fftwType sect = sqrt((real*real)+(imag*imag))/fftSize;
         
         if (array != nullptr)
         {
-            array[i] = sect/fftSize;
+            array[i] = sect;
         }
-    }
-    if (&array != nullptr)
-    {
-        if (amp != nullptr)
+        // Check amp
+        if (amp != nullptr && *amp < sect)
         {
-            *amp /= max-min;
+            *amp = sect;
         }
     }
+    
     return 1;
 }
 

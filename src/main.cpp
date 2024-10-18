@@ -44,15 +44,15 @@ bool initialize_pulse_audio()
     // Consider using a more widely available API, such as PortAudio...
     pa_sample_spec sampleSpec;
     sampleSpec.format = PA_SAMPLE_S32LE;    // 16-bit signed little-endian format
-    sampleSpec.rate = SAMPLE_RATE;            // Sample rate (Hz)
+    sampleSpec.rate = SAMPLERATE;            // Sample rate (Hz)
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (uint32_t) BUFSIZE;
+    bufferAttr.maxlength = (uint32_t) -1;
     bufferAttr.tlength = (uint32_t) SAMPDTL;
     bufferAttr.minreq = (uint32_t) -1;
     bufferAttr.prebuf = (uint32_t) SAMPDTL;
-    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1666, &sampleSpec);
+    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1667, &sampleSpec);
 
     int err=0;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
@@ -102,7 +102,7 @@ unsigned int load_shader(GLuint shaderType, const char* fileName)
     strcat(src, std::to_string(SAMPDTL).c_str());
     strcat(src, "\n");
     strcat(src, read_file(fileName, size));
-    printf("%s", src);
+    printf("%s\n", src);
     
     // Create shader
     unsigned int shader = glCreateShader(shaderType);
@@ -238,7 +238,7 @@ int main()
     // Final Initialization of GLFW
     glClearColor(0.0, 0.0, 0.0, 1.0);
     // Initialize fftw
-    filter_init(BUFSIZE, SAMPLE_RATE);
+    filter_init(BUFSIZE, SAMPLERATE);
     int32_t buffer[SAMPDTL];
     int error;
     // Use the shaderProgram
@@ -280,9 +280,10 @@ int main()
         fftwType bassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
         fftw_filter(audioBuffer, nullptr, 60, MAXFREQ, &amp);
-        fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
-        fftw_filter(audioBuffer, nullptr, 120, 150, &bassAmp);
+        fftw_filter(audioBuffer, nullptr, 20, 60, &subBassAmp);
+        fftw_filter(audioBuffer, nullptr, 300, 960, &bassAmp);
         // RENDERING STUFF
+        printf("%f\n", bassAmp);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
@@ -301,13 +302,13 @@ int main()
                 dist[i]+=(1024*deltaTime);
             }
         }
-        if (timePassed >= 0.1f && bassAmp > 0.003f)
+        if (timePassed >= 0.16 && bassAmp > 0.0015f)
         {
             for (int i=ringCount-1; i>0; i--)
             {
                 dist[i]=dist[i-1];
             }
-            dist[0] = 16+(amp*512*128);
+            dist[0] = 100.0f+((0*128.0f*64.0f)+(bassAmp*12000.0f))+16.0f;
             
             timePassed = 0;
         }

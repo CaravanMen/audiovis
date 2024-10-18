@@ -38,35 +38,34 @@ void DrawCircle()
     // Create index (based on conversion 2pi=1024, hence 2pi/1024)
     const int index = 1024-int((acos(distance_xy.y/distance_from_center))*(BUFSIZE/3.141592653589897f))-1;
     const float amp = ((highRange[index]*12000));
-    const float rad = 100+((amp+(bass_amp*12000))/2);
-    const float den = distance_from_center-(rad);
-    const float main_dist = distance_from_center-(rad)-(max_amp*512*128);
+    const float rad = 100.0f+(amp)+(max_amp*128.0f*64.0f)+(bass_amp*5000.0f);
+    const float den = distance_from_center-rad;
 
     // Red Background Settings
     const float redInverseFac = bass_amp*256;
-    const float redExpMult = 5.0f;
-    const float redYOffset = 1.0f;
+    const float redExpMult = 1.0f;
+    const float redYOffset = 0.6f;
     const float redExpVal = exp(redExpMult*(redInverseFac-redYOffset))-exp(redExpMult*(-redYOffset));
 
     // Colour outputting
     if (abs(distance_from_center) > den)
     {
-        outColor = vec4(1)/abs(main_dist);
+        outColor = vec4(1)/abs(den);
         // Render outer rings
         // Ring 1
-        outColor+=vec4((bass_amp*512), 0, (max_amp*512), 1)/abs(main_dist-16);
+        outColor+=vec4((bass_amp*128), 0, (max_amp*128), 1)/abs(den-16);
         // I'm a ghost 2:00
         // if (inverseFac >= 0.7f)
         // {
         // }
         // NOT WORKING - NEEDS FIXING:
     }
-    outColor.r = mix(outColor.r, ((den/512))-outColor.r, redExpVal);
+    outColor.r = mix(outColor.r, ((den/1024))-outColor.r, redExpVal);
     for (int i=0; i<ringCount; i++)
     {
-        if (dist[i] > main_dist-16 && dist[i] > 0)
+        if (dist[i] > den-16 && dist[i] > 0)
         {
-            outColor+=vec4(0, 0, 1, 1)/abs(den-dist[i]);
+            outColor+=vec4(0, 0, 1, 1)/abs(distance_from_center-dist[i]-amp);
         }
     }
 }
