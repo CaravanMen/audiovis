@@ -1,19 +1,57 @@
+// Main file that stores main parameters
+#include <main.h>
+
+// Libraries
 #include <memory.h>
+#include <string>
+// OpenGL Libraries
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <string>
 // RtAudio stuff
 #include <rtaudio/RtAudio.h>
+
+// Callback function to process audio data
+int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames, double streamTime, RtAudioStreamStatus status, void *userData) {
+    if (status) {
+        printf("[ERROR] RtAudio: Stream overflow detected!");
+    }
+
+    // Cast inputBuffer to the appropriate data type
+    float *audioData = static_cast<float *>(inputBuffer);
+
+    // Access audio data
+    for (unsigned int i = 0; i < nBufferFrames; i++) {
+        printf("Audio sample %i: %f\n", i, audioData[i]);
+    }
+
+    return 0; // Return 0 to indicate the stream is still active
+}
 
 bool initialize_RtAudio()
 {
     RtAudio audio;
     if (audio.getDeviceCount() < 1)
     {
-        std::cerr << "No audio devices found!\n";
+        printf("[ERROR] RtAudio: No audio devices found!\n");
         return 0;
     }
-    // Configure and start rtaudio as needed
+    // Set up stream parameters
+    RtAudio::StreamParameters inputParams;
+    inputParams.deviceId = audio.getDefaultInputDevice();
+    inputParams.nChannels = 1;
+    inputParams.firstChannel = 0;
+
+    unsigned int sampleRate = SAMPLERATE;
+    unsigned int bufferFrames = BUFSIZE;
+
+    try {
+        audio.openStream(nullptr, &inputParams, RTAUDIO_FLOAT32, sampleRate, &bufferFrames, &audioCallback);
+        audio.startStream();
+    }catch (RtAudioErrorCallback &e)
+    {
+        return 0;
+    }
+
     return 1;
 }
 
@@ -31,7 +69,6 @@ static inline void initClock()
 } 
 
 // Own files
-#include <main.h>
 #include <fileHandler.h>
 #include <filterHandler.h>
 /**
@@ -151,8 +188,12 @@ unsigned int load_program()
 int main()
 {
     // Initialize RtAudio
-
-    printf("[LOG] Successfully initialized Pulseaudio\n");
+    if (!initialize_RtAudio())
+    {
+        printf("[ERROR] Failed to initialize RtAudio\n");
+        return 0;
+    }
+    printf("[ERROR] RtAudio successfully initialized\n");
 
     // Initialize OpenGL
     // set error callback
@@ -211,7 +252,7 @@ int main()
     glClearColor(0.0, 0.0, 0.0, 1.0);
     // Initialize fftw
     filter_init(BUFSIZE, SAMPLERATE);
-    int32_t buffer[SAMPDTL];
+
     int error;
     // Use the shaderProgram
     glUseProgram(shaderProgram);
@@ -238,11 +279,6 @@ int main()
         timePassed += deltaTime;
         // Reading Audio Data
 
-        int err=0;
-        for (size_t i=0; i<=SAMPDTL; i++)
-        {
-            audioBuffer[i] = static_cast<fftwType>(buffer[i])/2147483647.0f;
-        }
         fftwType freqData[SAMPDTL];
         fftwType amp = 0;
         fftwType subBassAmp = 0;
