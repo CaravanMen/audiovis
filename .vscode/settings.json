@@ -53,6 +53,16 @@
         "thread": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "charconv": "cpp",
+        "optional": "cpp",
+        "format": "cpp",
+        "iomanip": "cpp",
+        "span": "cpp",
+        "sstream": "cpp",
+        "variant": "cpp",
+        "codecvt": "cpp",
+        "cstring": "cpp",
+        "climits": "cpp"
     }
 }

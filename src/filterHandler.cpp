@@ -16,19 +16,19 @@ void filter_init(int bufferSize, int sampleRate)
     fftOut = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
 
     // For testing purposes
-    // plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
+    plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
 
     
-    // Generate wisdom for more quality
-    if (fftwf_import_wisdom_from_filename("wisdom"))
-    {
-        // If wisdom already exists, use it
-        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
-    } else
-    {
-        plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
-        fftwf_export_wisdom_to_filename("wisdom");
-    }
+    // // Generate wisdom for more quality
+    // if (fftwf_import_wisdom_from_filename("wisdom"))
+    // {
+    //     // If wisdom already exists, use it
+    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
+    // } else
+    // {
+    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
+    //     fftwf_export_wisdom_to_filename("wisdom");
+    // }
 }
 
 bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType maxFreq, fftwType* amp)

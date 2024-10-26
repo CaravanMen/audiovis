@@ -1,16 +1,21 @@
-
-#include <malloc.h>
 #include <memory.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <algorithm>
 #include <string>
-#include <chrono>
-#include <math.h>
-#include <thread>
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#include <list>
+// RtAudio stuff
+#include <rtaudio/RtAudio.h>
+
+bool initialize_RtAudio()
+{
+    RtAudio audio;
+    if (audio.getDeviceCount() < 1)
+    {
+        std::cerr << "No audio devices found!\n";
+        return 0;
+    }
+    // Configure and start rtaudio as needed
+    return 1;
+}
 
 // Time stuff
 #include <chrono>
@@ -36,36 +41,8 @@ static inline void initClock()
 fftwType audioBuffer[SAMPDTL];
 // Global Variables
 int fwidth, fheight;
-pa_simple* paConn = NULL;
 
-bool initialize_pulse_audio()
-{
-    // Device initialization (This is PulseAudio; Linux (Ubuntu) sound server)
-    // Consider using a more widely available API, such as PortAudio...
-    pa_sample_spec sampleSpec;
-    sampleSpec.format = PA_SAMPLE_S32LE;    // 16-bit signed little-endian format
-    sampleSpec.rate = SAMPLERATE;            // Sample rate (Hz)
-    sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
-
-    pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (uint32_t) -1;
-    bufferAttr.tlength = (uint32_t) SAMPDTL;
-    bufferAttr.minreq = (uint32_t) -1;
-    bufferAttr.prebuf = (uint32_t) SAMPDTL;
-    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1667, &sampleSpec);
-
-    int err=0;
-    paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
-
-    
-    if (err)    
-    {
-        fprintf(stderr, "[ERR] pa_simple_new() failed: %s\n", pa_strerror(err));
-        return 0;  
-    }
- 
-    return 1;
-}
+// Setting up RtAudio
 
 // OPENGL STUFF
 // Callbacks
@@ -173,13 +150,8 @@ unsigned int load_program()
 
 int main()
 {
-    // Initialize pulseaudio   
-    if (!initialize_pulse_audio())
-    {
-        printf("[ERR] Failed to initialize Pulseaudio\n");
-        glfwTerminate();
-        return -1;
-    }
+    // Initialize RtAudio
+
     printf("[LOG] Successfully initialized Pulseaudio\n");
 
     // Initialize OpenGL
@@ -264,12 +236,9 @@ int main()
     {
         lastTime = currTime;
         timePassed += deltaTime;
-        // PULSEAUDIO STUFF
+        // Reading Audio Data
+
         int err=0;
-        if (pa_simple_read(paConn, buffer, sizeof(buffer), &error) < 0) {
-            fprintf(stderr, "[ERR] pa_simple_read() failed: %s\n", pa_strerror(error));
-            break;
-        }
         for (size_t i=0; i<=SAMPDTL; i++)
         {
             audioBuffer[i] = static_cast<fftwType>(buffer[i])/2147483647.0f;
