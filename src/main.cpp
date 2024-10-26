@@ -281,16 +281,18 @@ int main()
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
         fftw_filter(audioBuffer, nullptr, 60, MAXFREQ, &amp);
         fftw_filter(audioBuffer, nullptr, 20, 60, &subBassAmp);
-        fftw_filter(audioBuffer, nullptr, 300, 960, &bassAmp);
+        fftw_filter(audioBuffer, nullptr, 90, 320, &bassAmp);
         // RENDERING STUFF
-        printf("%f\n", bassAmp);
-        glClear(GL_COLOR_BUFFER_BIT);
-
+        if (bassAmp != 0.0f)
+        {
+            printf("%f\n", bassAmp);
+        }
         // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
         glUniform1f(1, amp);
         glUniform1f(2, subBassAmp);
+        glUniform1f(4, bassAmp);
 
         // Calculate rings
         glUniform1i(3, ringCount);
@@ -302,13 +304,19 @@ int main()
                 dist[i]+=(1024*deltaTime);
             }
         }
-        if (timePassed >= 0.16 && bassAmp > 0.0015f)
+        if (timePassed >= 0.0624f && bassAmp >= 0.005f)
         {
+            float newPos = 100.0f+((amp*128.0f*64.0f)+(subBassAmp*5000.0f))+(bassAmp*10000.0f)+16.0f;
             for (int i=ringCount-1; i>0; i--)
             {
-                dist[i]=dist[i-1];
+                if (dist[i] < dist[0] && dist[i] > 0)
+                {
+                    dist[i] = newPos;
+                }else{
+                    dist[i] = dist[i-1];
+                }
             }
-            dist[0] = 100.0f+((0*128.0f*64.0f)+(bassAmp*12000.0f))+16.0f;
+            dist[0] = newPos;
             
             timePassed = 0;
         }
