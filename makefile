@@ -1,9 +1,11 @@
-default:
-	g++ -o audio_vis ./src/*.cpp ./src/*.c -I ./lib/include/ -lglfw -lGL -lpulse-simple -lpulse -lfftw3f -lm 
-	./audio_vis;
+EXEC=audio-vis
+
+${EXEC}: 
+	g++ -o ${EXEC} ./src/*.cpp ./src/*.c -I./lib/include/ -L./lib/libraries -lglfw3 -lGL -lpulse-simple -lpulse -lfftw3f -lm 
+	./${EXEC}
 build:
-	g++ -o audio_vis ./src/*.cpp ./src/*.c -I ./lib/include/ -lglfw -lGL -lpulse-simple -lpulse -lfftw3f -lm
+	g++ -o ${EXEC} ./src/*.cpp ./src/*.c -I./lib/include/ -L./lib/libraries -lglfw3 -lGL -lpulse-simple -lpulse -lfftw3f -lm
+.PHONY: build
 clean:
-	rm ./audio_vis;
-run:
-	./audio_vis;
+	rm ./${EXEC};
+.PHONY: clean

@@ -1,41 +1,14 @@
-
-#include <malloc.h>
-#include <memory.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <algorithm>
-#include <string>
-#include <chrono>
-#include <math.h>
-#include <thread>
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#include <list>
-
-// Time stuff
-#include <chrono>
-using namespace std::chrono;
-#define timeNow system_clock::now()
-time_point<system_clock> lastTime, currTime;
-duration<float> _duration;
-float deltaTime;
-
-static inline void initClock()
-{
-    currTime=timeNow;
-} 
-
-// Own files
 #include <main.h>
+// Own files
 #include <fileHandler.h>
 #include <filterHandler.h>
-/**
- * NOTE
- * * Possibly make audiobuffer only store raw buffer data.
-**/
-fftwType audioBuffer[SAMPDTL];
-// Global Variables
-int fwidth, fheight;
+// Libraries
+#include <memory.h>
+#include <string>
+// Pulseaudio stuff
+#include <pulse/simple.h>
+#include <pulse/error.h>
+
 pa_simple* paConn = NULL;
 
 bool initialize_pulse_audio()
@@ -67,8 +40,26 @@ bool initialize_pulse_audio()
     return 1;
 }
 
-// OPENGL STUFF
-// Callbacks
+// Time stuff
+#include <chrono>
+using namespace std::chrono;
+#define timeNow system_clock::now()
+time_point<system_clock> lastTime, currTime;
+duration<float> _duration;
+float deltaTime;
+
+static inline void initClock()
+{
+    currTime=timeNow;
+}
+// Global Variables
+fftwType audioBuffer[SAMPDTL];
+int fwidth, fheight;
+
+// OpenGL Libraries
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+// OpenGL Functions
 void error_callback(int err, const char* desc)
 {
     printf("[ERR] GLFW ERR CODE: %i\n DESC: %s\n", err, desc);
@@ -102,7 +93,6 @@ unsigned int load_shader(GLuint shaderType, const char* fileName)
     strcat(src, std::to_string(SAMPDTL).c_str());
     strcat(src, "\n");
     strcat(src, read_file(fileName, size));
-    printf("%s\n", src);
     
     // Create shader
     unsigned int shader = glCreateShader(shaderType);
@@ -137,11 +127,13 @@ unsigned int load_program()
     unsigned int vertShader = load_shader(GL_VERTEX_SHADER, "vertexshader.vert");
     if (!vertShader)
     {
+        printf("[ERR] Failed to load vertex shader.\n");
         return 0;
     }
     unsigned int fragShader = load_shader(GL_FRAGMENT_SHADER, "fragmentshader.frag");
     if (!fragShader)
     {
+        printf("[ERR] Failed to load fragment shader.\n");
         return 0;
     }
     // Create shader program
@@ -171,6 +163,7 @@ unsigned int load_program()
     return shaderProgram;
 }
 
+// Main function
 int main()
 {
     // Initialize pulseaudio   
@@ -178,7 +171,7 @@ int main()
     {
         printf("[ERR] Failed to initialize Pulseaudio\n");
         glfwTerminate();
-        return -1;
+        return 1;
     }
     printf("[LOG] Successfully initialized Pulseaudio\n");
 
@@ -190,7 +183,7 @@ int main()
     {
         // GLFW initialization failed
         printf("[ERR] Failed to initialize GLFW\n");
-        return -1;
+        return 1;
     }
     printf("[LOG] Successfully initialized GLFW\n");
     // GLFW window hints
@@ -207,7 +200,7 @@ int main()
         // Failed to create GLFW window
         printf("[ERR] Failed to create window\n");
         glfwTerminate();
-        return -1;
+        return 1;
     }
     printf("[LOG] Successfully created window\n");
     // Select GLFW window as current context (for gl drawing)
@@ -218,16 +211,16 @@ int main()
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         printf("[ERR] Failed to load openGL\n");
-        return -1;
+        return 1;
     }
     printf("[LOG] Successfully loaded openGL\n");
 
     // Create shader program
     unsigned int shaderProgram = load_program();
-    if (!shaderProgram)
-    {
-        return -1;
-    }
+    // if (!shaderProgram)
+    // {
+    //     return 1;
+    // }
 
     // // generate a buffer object
     unsigned int ssboID;
