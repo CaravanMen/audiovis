@@ -60,12 +60,12 @@ void DrawCircle()
         // }
         // NOT WORKING - NEEDS FIXING:
     }
-    outColor.r = mix(outColor.r, ((den/1024.0f)), redExpVal);
+    outColor.r = mix(outColor.r, ((den/4096.0f)), redExpVal);
     for (int i=0; i<ringCount; i++)
     {
         if (dist[i] > den-16 && dist[i] > 0)
         {
-            outColor+=vec4(0, 0, bass_amp*1024.0f, 1)/abs(distance_from_center-dist[i]-amp);
+            outColor+=vec4((sub_bass_amp*128), 0, (sub_bass_amp+bass_amp)*1024.0f, 1)/abs(distance_from_center-dist[i]-amp);
         }
     }
 }

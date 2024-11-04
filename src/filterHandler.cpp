@@ -17,17 +17,16 @@ void filter_init(int bufferSize, int sampleRate)
 
     // For testing purposes
     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
-
     
     // // Generate wisdom for more quality
-    // if (fftwf_import_wisdom_from_filename("wisdom"))
+    // if (fftw_import_wisdom_from_filename("wisdom"))
     // {
     //     // If wisdom already exists, use it
-    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
+    //     plan = fftw_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE_PATIENT | FFTW_WISDOM_ONLY);
     // } else
     // {
-    //     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
-    //     fftwf_export_wisdom_to_filename("wisdom");
+    //     plan = fftw_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_EXHAUSTIVE);
+    //     fftw_export_wisdom_to_filename("wisdom");
     // }
 }
 
@@ -36,23 +35,20 @@ bool fftw_filter(fftwType* source, fftwType* array, fftwType minFreq, fftwType m
     int min = minFreq*fftSize/fftSampleRate;
     int max = maxFreq*fftSize/fftSampleRate;
 
-    for (size_t i = 0; i < fftSize; i++)
+    for (size_t i = 0; i < SAMPDTL; i++)
     {
         fftIn[i][1] = 0;
-        if (i<SAMPDTL)
-        {
-            fftIn[i][0] = source[i];  
-        }else fftIn[i][0] = 0;
+        fftIn[i][0] = source[i];
     }
     // Run the fft filter
     fftwf_execute(plan);
     // Output filter and find loudest part
-    for (size_t i = 0; i <= max-min; i++)
+    for (size_t i = 0; i < max-min; i++)
     {
         int index = min+i;
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
-        fftwType sect = sqrt((real*real)+(imag*imag))/fftSize;
+        fftwType sect = sqrt((real*real)+(imag*imag))/static_cast<float>(fftSize);
         
         if (array != nullptr)
         {

@@ -252,9 +252,10 @@ int main()
     // System clock stuff
     initClock();
     float timePassed = 0;
-
+    float bassThreshold=0;
     while (!glfwWindowShouldClose(window))
     {
+        glClear(GL_COLOR_BUFFER_BIT);
         lastTime = currTime;
         timePassed += deltaTime;
         // PULSEAUDIO STUFF
@@ -263,23 +264,23 @@ int main()
             fprintf(stderr, "[ERR] pa_simple_read() failed: %s\n", pa_strerror(error));
             break;
         }
-        for (size_t i=0; i<=SAMPDTL; i++)
+        for (size_t i=0; i<SAMPDTL; i++)
         {
-            audioBuffer[i] = static_cast<fftwType>(buffer[i])/2147483647.0f;
+            audioBuffer[i] = static_cast<float>(buffer[i])/2147483647.0f;
         }
         fftwType freqData[SAMPDTL];
         fftwType amp = 0;
         fftwType subBassAmp = 0;
         fftwType bassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
-        fftw_filter(audioBuffer, nullptr, 60, MAXFREQ, &amp);
+        fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
         fftw_filter(audioBuffer, nullptr, 20, 60, &subBassAmp);
-        fftw_filter(audioBuffer, nullptr, 90, 320, &bassAmp);
-        // RENDERING STUFF
-        if (bassAmp != 0.0f)
-        {
-            printf("%f\n", bassAmp);
-        }
+        fftw_filter(audioBuffer, nullptr, 60, 350, &bassAmp);
+        // if (bassAmp != 0.0f)
+        // {
+        //     printf("%f\n", bassAmp);
+        // }
+
         // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
@@ -292,13 +293,23 @@ int main()
         glNamedBufferSubData(rads, 0, sizeof(float)*ringCount, dist);
         for (int i=0; i<ringCount; i++)
         {
-            if (dist[i] > 0)
+            if (dist[i] != 0)
             {
                 dist[i]+=(1024*deltaTime);
             }
         }
-        if (timePassed >= 0.0624f && bassAmp >= 0.005f)
+        // Calculating bass threshhold
+        if (bassAmp < bassThreshold/2){
+            bassThreshold -= (timePassed*0.001f);
+        }
+        if (bassThreshold < 0.0055f)
         {
+            bassThreshold = 0.0055f;
+        }
+        // bass threshhold stuff
+        if (timePassed >= 0.16f && bassAmp >= bassThreshold)
+        {
+            printf("bassThreshold: %f, timePassed: %f, BassAmp: %f\n", bassThreshold, timePassed, bassAmp);
             float newPos = 100.0f+((amp*128.0f*64.0f)+(subBassAmp*5000.0f))+(bassAmp*10000.0f)+16.0f;
             for (int i=ringCount-1; i>0; i--)
             {
@@ -312,6 +323,7 @@ int main()
             dist[0] = newPos;
             
             timePassed = 0;
+            bassThreshold = bassAmp;
         }
         // End calculation
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
