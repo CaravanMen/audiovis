@@ -21,11 +21,11 @@ bool initialize_pulse_audio()
     sampleSpec.channels = CHANNELS;            // Number of channels (stereo)
 
     pa_buffer_attr bufferAttr;
-    bufferAttr.maxlength = (uint32_t) -1;
-    bufferAttr.tlength = (uint32_t) SAMPDTL;
-    bufferAttr.minreq = (uint32_t) -1;
-    bufferAttr.prebuf = (uint32_t) SAMPDTL;
-    bufferAttr.fragsize = (uint32_t) pa_usec_to_bytes(1667, &sampleSpec);
+    bufferAttr.maxlength = -1;
+    bufferAttr.tlength = (size_t) SAMPDTL;
+    bufferAttr.minreq = -1;
+    bufferAttr.prebuf = pa_usec_to_bytes(1667, &sampleSpec);
+    bufferAttr.fragsize = pa_usec_to_bytes(1666, &sampleSpec);
 
     int err=0;
     paConn = pa_simple_new(NULL, "read-audio", PA_STREAM_RECORD, PA_DEV_NAME, "read-audio", &sampleSpec, NULL, &bufferAttr, &err);
@@ -89,7 +89,7 @@ unsigned int load_shader(GLuint shaderType, const char* fileName)
     // Collecting shader source code from files
     int size;
     char* src = (char*)malloc(sizeof(char)*10000);
-    strcpy(src, (char*)"#version 460 core\n#define BUFSIZE ");
+    strcpy(src, (char*)"#version 460 core\n#define BUFFSIZE ");
     strcat(src, std::to_string(SAMPDTL).c_str());
     strcat(src, "\n");
     strcat(src, read_file(fileName, size));
@@ -113,7 +113,7 @@ unsigned int load_shader(GLuint shaderType, const char* fileName)
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
         printf("[ERR] %s Compilation failed: %s\n", typeChar, infoLog);
-        return 0;
+        exit(-1);
     }
     printf("[LOG] Successfully compiled %s!\n", typeChar);
     // Return shader ID
@@ -152,7 +152,7 @@ unsigned int load_program()
         char infoLog[512];
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         printf("[ERR] Failed to link shaderProgram: %s\n", infoLog);
-        return -1;
+        exit(-1);
     }
 
     printf("[LOG] Successfully linked program!\n");
@@ -162,6 +162,7 @@ unsigned int load_program()
 
     return shaderProgram;
 }
+
 
 // Main function
 int main()
@@ -231,7 +232,7 @@ int main()
     // Final Initialization of GLFW
     glClearColor(0.0, 0.0, 0.0, 1.0);
     // Initialize fftw
-    filter_init(BUFSIZE, SAMPLERATE);
+    filter_init(BUFFSIZE, SAMPLERATE);
     int32_t buffer[SAMPDTL];
     int error;
     // Use the shaderProgram
@@ -241,23 +242,32 @@ int main()
     int glErr;
     // Main while loop
     glUniform2i(0, WIDTH, HEIGHT);
-    // Rings stuff
-    int ringCount = 16;
-    float dist[ringCount];
-    unsigned int rads;
-    glCreateBuffers(1, &rads);
-    glNamedBufferStorage(rads, sizeof(float)*ringCount, 0, GL_DYNAMIC_STORAGE_BIT);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, rads);
 
+    // Rings Buffer Setup
+    RadialCircleDataStruct<fftwType> bassRings;
+    unsigned int bassRingsBuffer;
+    glCreateBuffers(1, &bassRingsBuffer);
+    glNamedBufferStorage(bassRingsBuffer, sizeof(bassRings.array)+sizeof(int), 0, GL_DYNAMIC_STORAGE_BIT);
+    glNamedBufferSubData(bassRingsBuffer, 0, sizeof(int), &bassRings.maxRings);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bassRingsBuffer);
+
+    // All bassThreshold Stuff
+    float minBassAmp = 0.0055f;
+    float bassThreshold = minBassAmp;
+    float highestBass = minBassAmp;
+    double bassThresholdTimePassed = 0.0;
+    double bassRingTimePassed = 0;
+    float outCircRad = 16;
+
+    fftwType amp = 0;
+    fftwType bassAmp = 0;
+    fftwType subBassAmp = 0;
     // System clock stuff
     initClock();
-    float timePassed = 0;
-    float bassThreshold=0;
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
         lastTime = currTime;
-        timePassed += deltaTime;
         // PULSEAUDIO STUFF
         int err=0;
         if (pa_simple_read(paConn, buffer, sizeof(buffer), &error) < 0) {
@@ -269,67 +279,74 @@ int main()
             audioBuffer[i] = static_cast<float>(buffer[i])/2147483647.0f;
         }
         fftwType freqData[SAMPDTL];
-        fftwType amp = 0;
-        fftwType subBassAmp = 0;
-        fftwType bassAmp = 0;
         fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
         fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
-        fftw_filter(audioBuffer, nullptr, 20, 60, &subBassAmp);
-        fftw_filter(audioBuffer, nullptr, 60, 350, &bassAmp);
-        // if (bassAmp != 0.0f)
-        // {
-        //     printf("%f\n", bassAmp);
-        // }
+        fftw_filter(audioBuffer, nullptr, 90, 300, &bassAmp);
+        fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
 
         // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(fftwType)*SAMPDTL, freqData);
+        glNamedBufferSubData(ssboID, 0, sizeof(fftwType)*SAMPDTL, freqData);
         glUniform1f(1, amp);
         glUniform1f(2, subBassAmp);
         glUniform1f(4, bassAmp);
 
-        // Calculate rings
-        glUniform1i(3, ringCount);
-        glNamedBufferSubData(rads, 0, sizeof(float)*ringCount, dist);
-        for (int i=0; i<ringCount; i++)
+        float newPos = 75.0f+(amp/2)+(amp*128.0f*64.0f)+(subBassAmp*1024.0f)+(bassAmp*1024.0f)+16.0f;
+        if (newPos >= outCircRad)
         {
-            if (dist[i] != 0)
+            outCircRad = newPos;
+        }else
+        {
+            outCircRad-=128.0f*deltaTime;
+        }
+        glUniform1f(3, outCircRad);
+
+        if (highestBass < bassAmp)
+        {
+            highestBass = bassAmp;
+        }
+        // Updating Bass Threshold
+        if (bassThresholdTimePassed > 0.033f)
+        {
+            if (highestBass >= bassThreshold)
             {
-                dist[i]+=(1024*deltaTime);
+                bassThreshold = (highestBass+bassThreshold)/2.0f;
+                highestBass = minBassAmp;
+            }
+            if (bassThreshold > highestBass)
+            {
+                bassThreshold -= 0.00125f*bassThresholdTimePassed;
+            }
+            bassThresholdTimePassed = 0;
+        }
+        for (int i=0; i<bassRings.maxRings; i++)
+        {
+            if (bassRings.array[i] > 0.0f)
+            {
+                bassRings.array[i] += 512.0f*deltaTime;
             }
         }
-        // Calculating bass threshhold
-        if (bassAmp < bassThreshold/2){
-            bassThreshold -= (timePassed*0.001f);
-        }
-        if (bassThreshold < 0.0055f)
+        if (bassAmp >= bassThreshold && bassRingTimePassed > 0.17)
         {
-            bassThreshold = 0.0055f;
-        }
-        // bass threshhold stuff
-        if (timePassed >= 0.16f && bassAmp >= bassThreshold)
-        {
-            printf("bassThreshold: %f, timePassed: %f, BassAmp: %f\n", bassThreshold, timePassed, bassAmp);
-            float newPos = 100.0f+((amp*128.0f*64.0f)+(subBassAmp*5000.0f))+(bassAmp*10000.0f)+16.0f;
-            for (int i=ringCount-1; i>0; i--)
+            printf("bassRing: %i, bassThreshold: %f, timePassed: %f, BassAmp: %f\n", bassRings.nextAvailable, bassThreshold, bassRingTimePassed, bassAmp);
+            for (int i=0; i<bassRings.maxRings; i++)
             {
-                if (dist[i] < dist[0] && dist[i] > 0)
+                if (bassRings.array[i] < newPos && bassRings.array[i] > 0)
                 {
-                    dist[i] = newPos;
-                }else{
-                    dist[i] = dist[i-1];
+                    bassRings.array[i] = outCircRad;
                 }
             }
-            dist[0] = newPos;
-            
-            timePassed = 0;
-            bassThreshold = bassAmp;
+            bassRings.array[bassRings.nextAvailable] = newPos;
+            memcpy(&bassRings.array[(bassRings.nextAvailable*SAMPDTL)+16], &freqData[0], SAMPDTL*sizeof(freqData[0]));
+
+            bassRings.nextAvailable = (bassRings.nextAvailable < bassRings.maxRings-1)?bassRings.nextAvailable+1:0;
+            // bass threshhold stuff
+            bassRingTimePassed = 0;
         }
+        glNamedBufferSubData(bassRingsBuffer, sizeof(int), sizeof(float)*(16+(SAMPDTL*16)), &bassRings.array[0]);
         // End calculation
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
 
         // Error checking
         glErr = glGetError();
@@ -372,6 +389,8 @@ int main()
         _duration = currTime-lastTime;
         deltaTime = _duration.count();
 
+        bassRingTimePassed += deltaTime;
+        bassThresholdTimePassed += deltaTime;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
