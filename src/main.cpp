@@ -255,7 +255,7 @@ int main() {
             if (bassThresholdTimePassed > 0.03)
             {
                 float deltaBass = bassThreshold-highestBass;
-                if (deltaBass <= 0.0005f)
+                if (deltaBass < 0.0008f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
@@ -271,7 +271,7 @@ int main() {
                         bassRings.nextAvailable = (bassRings.nextAvailable < bassRings.maxRings-1)?bassRings.nextAvailable+1:0;
                         bassRingTimePassed = 0;
                     }
-                }else if (deltaBass > 0.0005f)
+                }else if (deltaBass > 0.0008f)
                 {
                     bassThreshold -= 0.003f*bassThresholdTimePassed;
                     if (bassThreshold < minBassAmp)
