@@ -4,6 +4,7 @@
 layout (binding = 0) uniform storageBuffer
 {
     float highRange[BUFFSIZE];
+    float lineData[BUFFSIZE];
 };
 
 layout (binding = 1) buffer ringBuffer
@@ -21,6 +22,12 @@ layout (location = 3) uniform float outCircRad;
 
 // Output color
 out vec3 outColor;
+
+float lineSegment(vec2 p, vec2 a, vec2 b) {
+    vec2 pa = p - a, ba = b - a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return smoothstep(0.0, 10.0, length(pa - ba*h));
+}
 
 void main()
 {
@@ -40,8 +47,8 @@ void main()
     // Create index (based on conversion 2pi=1024, hence 2pi/1024)
     const int index = BUFFSIZE-int((acos(distance_xy.y/distance_from_center))*(BUFFSIZE/3.141592653589897f))-1;
     const float sampData = highRange[index]*6000.0f;
-    const float rad = 73.0f+sampData+(max_amp*8192.0f)+(bass_amp*1024.0f);
-    const float den = distance_from_center-rad;
+    const float rad = 73.0f+(max_amp*8192.0f)+(bass_amp*1024.0f);
+    const float den = distance_from_center-rad-sampData;
 
     // ------- Calculating background information -------
     const float inverseFac = sub_bass_amp*sub_bass_amp;
@@ -68,11 +75,17 @@ void main()
                 outColor += vec3(0.625f, 0, 5.0f)/abs(distance_from_center-rad-historicalAmp);
             }
         }
+        outColor += backgroundColor;
         // I'm a ghost 2:00
     }else
     {
+        float offset = highRange[512]*6000.0f;
+        vec2 p = vec2(((distance_xy.x+rad+offset)*1024.0f)/(2.0*(rad+offset)), (distance_xy.y)*1024.0f/(2.0*(rad+offset)));
+        float fl = floor(p.x);
+        float flAmp = lineData[int(fl)]*256.0f;
+        float cl = ceil(p.x);
+        float clAmp = lineData[int(cl)]*256.0f;
         // Draw lines
-        outColor = vec3(0);
+        outColor = mix(vec3(1.0), vec3(0.0), lineSegment(p, vec2(fl, flAmp), vec2(cl, clAmp)));
     }
-    outColor += backgroundColor;
 }

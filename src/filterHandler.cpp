@@ -42,7 +42,7 @@ bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, fftwType minFreq, fftwTy
     for (size_t i = 0; i < SAMPDTL; i++)
     {
         fftIn[i][1] = 0;
-        fftIn[i][0] = arrayIn[i]*512.0f;
+        fftIn[i][0] = arrayIn[i];
     }
     // Run the fft filter
     fftwf_execute(plan);

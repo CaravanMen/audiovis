@@ -183,7 +183,7 @@ int main() {
     // // generate a buffer object
     unsigned int ssboID;
     glCreateBuffers(1, &ssboID);
-    glNamedBufferStorage(ssboID, sizeof(fftwType)*SAMPDTL, 0, GL_DYNAMIC_STORAGE_BIT);
+    glNamedBufferStorage(ssboID, sizeof(fftwType)*SAMPDTL*2, 0, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ssboID);
 
     // Final Initialization of GLFW
@@ -223,7 +223,7 @@ int main() {
     int32_t buffer[SAMPDTL];
     int error;
     // Open Stream and start adding to Rolling Buffer
-    OpenStream(Pa_GetDefaultInputDevice(), 2, 0, SAMPLERATE);
+    OpenStream(Pa_GetDefaultInputDevice(), 1, 0, SAMPLERATE);
     StartStream();
     // System clock stuff
     initClock();
@@ -231,59 +231,31 @@ int main() {
     {
         glClear(GL_COLOR_BUFFER_BIT);
         lastTime = currTime;
+
         // Reading audio
-        ReadRingBuffer(audioBuffer, SAMPDTL);
-        // Filtering Audio
-        fftwType freqData[SAMPDTL];
-        fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
-        fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
-        fftw_filter(audioBuffer, nullptr, 60, 300, &bassAmp);
-        fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
-        bgSmoothing = (bgSmoothing+subBassAmp)/2.0f;
-
-        // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
-        glNamedBufferSubData(ssboID, 0, sizeof(fftwType)*SAMPDTL, freqData);
-        glUniform1f(1, amp);
-        glUniform1f(2, bgSmoothing);
-        glUniform1f(4, bassAmp);
-
-        float newPos = 75.0f+(amp/2)+(amp*128.0f*64.0f)+(bassAmp*1024.0f)+16.0f;
-        if (newPos > outCircRad)
+        int framesRead = ReadRingBuffer(audioBuffer, SAMPDTL);
+        if (framesRead)
         {
-            outCircRad = newPos;
-        }else
-        {
-            outCircRad-=128.0f*deltaTime;
-        }
-        glUniform1f(3, outCircRad);
+            // Filtering Audio
+            fftwType freqData[SAMPDTL];
+            fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
+            fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
+            fftw_filter(audioBuffer, nullptr, 60, 300, &bassAmp);
+            fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
+            bgSmoothing = (bgSmoothing+subBassAmp)/2.0f;
 
-        // Bass Ring stuff
-        {
-            for (int i=0; i<bassRings.maxRings; i++)
-            {
-                if (bassRings.array[i] > 0.0f)
-                {
-                    if (bassRings.array[i] < newPos)
-                    {
-                        bassRings.array[i] = outCircRad;
-                    }else{
-                        
-                        bassRings.array[i] += 512.0f*deltaTime;
-                    }
-                }
-                if (bassRings.array[i] > 1024.0f) {
-                    bassRings.array[i] = 0;
-                }
-            }
-            if (highestBass < bassAmp)
-            {
-                highestBass = bassAmp;
-            }
+            // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
+            glNamedBufferSubData(ssboID, 0, sizeof(fftwType)*SAMPDTL, freqData);
+            glNamedBufferSubData(ssboID, sizeof(fftwType)*SAMPDTL, sizeof(fftwType)*SAMPDTL, audioBuffer);
+            glUniform1f(1, amp);
+            glUniform1f(2, bgSmoothing);
+            glUniform1f(4, bassAmp);
             // Updating Bass Threshold
             if (bassThresholdTimePassed > 0.03)
             {
-                if (highestBass >= bassThreshold)
+                float deltaBass = bassThreshold-highestBass;
+                if (deltaBass <= 0.0005f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
@@ -299,7 +271,7 @@ int main() {
                         bassRings.nextAvailable = (bassRings.nextAvailable < bassRings.maxRings-1)?bassRings.nextAvailable+1:0;
                         bassRingTimePassed = 0;
                     }
-                }else if (bassThreshold-highestBass > 0.0001f)
+                }else if (deltaBass > 0.0005f)
                 {
                     bassThreshold -= 0.003f*bassThresholdTimePassed;
                     if (bassThreshold < minBassAmp)
@@ -310,7 +282,40 @@ int main() {
                 bassThresholdTimePassed = 0;
                 highestBass = 0;
             }
+            if (highestBass < bassAmp)
+            {
+                highestBass = bassAmp;
+            }
         }
+
+        float newPos = 75.0f+(amp/2)+(amp*128.0f*64.0f)+(bassAmp*1024.0f)+16.0f;
+        if (newPos > outCircRad)
+        {
+            outCircRad = newPos;
+        }else
+        {
+            outCircRad-=128.0f*deltaTime;
+        }
+        glUniform1f(3, outCircRad);
+
+        // Bass Ring stuff
+        for (int i=0; i<bassRings.maxRings; i++)
+        {
+            if (bassRings.array[i] > 0.0f)
+            {
+                if (bassRings.array[i] < newPos)
+                {
+                    bassRings.array[i] = outCircRad;
+                }else{
+                    
+                    bassRings.array[i] += 512.0f*deltaTime;
+                }
+            }
+            if (bassRings.array[i] > 1024.0f) {
+                bassRings.array[i] = 0;
+            }
+        }
+
         glNamedBufferSubData(bassRingsBuffer, sizeof(int), sizeof(float)*(16+(SAMPDTL*16)), &bassRings.array[0]);
         // End calculation
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -364,7 +369,6 @@ int main() {
     }
     glDeleteBuffers(1, &ssboID);
     glDeleteProgram(shaderProgram);
-    glDeleteVertexArrays(1, &ssboID);
     glDeleteProgram(shaderProgram);
     // Terminating all subsystems
     TerminateAudioHandler();

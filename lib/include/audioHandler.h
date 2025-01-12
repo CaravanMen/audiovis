@@ -26,4 +26,4 @@ void StartStream();
 void StopStream();
 
 // RingBuffer stuff
-void ReadRingBuffer(float *data, int elementCount);
+int ReadRingBuffer(float *data, int elementCount);

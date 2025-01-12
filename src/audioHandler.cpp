@@ -1,6 +1,8 @@
 #include <audioHandler.h>
 #include <memory>
 #include <math.h>
+#include <malloc.h>
+#include <string.h>
 using namespace std;
 
 PaUtilRingBuffer rBuffer;
@@ -17,11 +19,14 @@ int audioCallback(const void *input, void *output, unsigned long frameCount, con
     }
     (void)output;
     const float *in = (const float*) input;
+    
     unsigned long framesWritten = PaUtil_WriteRingBuffer(&rBuffer, in, framesPerBuffer);
+
     // Check for buffer overflow
     if (framesWritten < framesPerBuffer) {
         printf("Ring buffer overflow! Lost %i frames\n", (framesPerBuffer - framesWritten));
     }
+
     return paContinue;
 }
 
@@ -105,7 +110,7 @@ void StopStream()
     checkErr(err);
 }
 
-void ReadRingBuffer(float *data, int elementCount)
+int ReadRingBuffer(float *data, int elementCount)
 {
     // Read samples from the ring buffer
     float readBuffer[elementCount];
@@ -115,8 +120,11 @@ void ReadRingBuffer(float *data, int elementCount)
         unsigned long framesToRead = min((unsigned long)elementCount, framesAvailable);
         unsigned long framesRead = PaUtil_ReadRingBuffer(&rBuffer, readBuffer, framesToRead);
 
-        *data = *readBuffer;
+        memcpy(data, readBuffer, framesRead*sizeof(float));
+        // printf("%f/%f, %i\n", data[0], data[2], framesRead);
+        return framesRead;
     }
+    return 0;
 }
 
 void TerminateAudioHandler()
