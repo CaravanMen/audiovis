@@ -223,7 +223,7 @@ int main() {
     int32_t buffer[SAMPDTL];
     int error;
     // Open Stream and start adding to Rolling Buffer
-    OpenStream(Pa_GetDefaultInputDevice(), 2, 2, SAMPLERATE);
+    OpenStream(Pa_GetDefaultInputDevice(), 2, 0, SAMPLERATE);
     StartStream();
     // System clock stuff
     initClock();

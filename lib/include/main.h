@@ -4,7 +4,6 @@
 #define MINFREQ 30
 #define MAXFREQ 1200
 #define SAMPLERATE 48000
-#define CHANNELS 1
 #define WIDTH 512
 #define HEIGHT 512
 #define RINGBUFFERSIZE 131072

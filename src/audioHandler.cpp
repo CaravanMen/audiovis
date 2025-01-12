@@ -66,21 +66,21 @@ void InitialiseAudioHandler(int FramesPerBuffer, int RingBufferSize){
 
 void OpenStream(int device, int inChannelCount, int outChannelCount, int sampleRate)
 {
-    PaStreamParameters inputParameters;
-    inputParameters.device = device;
-    inputParameters.channelCount = inChannelCount;
-    inputParameters.sampleFormat = paFloat32;
-    inputParameters.hostApiSpecificStreamInfo = NULL;
-    inputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowInputLatency;
-    PaStreamParameters outputParameters;
-    outputParameters.device = device;
-    outputParameters.channelCount = outChannelCount;
-    outputParameters.sampleFormat = paFloat32;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowInputLatency;
+    // PaStreamParameters inputParameters;
+    // inputParameters.device = device;
+    // inputParameters.channelCount = inChannelCount;
+    // inputParameters.sampleFormat = paFloat32;
+    // inputParameters.hostApiSpecificStreamInfo = NULL;
+    // inputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowInputLatency;
+    // PaStreamParameters outputParameters;
+    // outputParameters.device = device;
+    // outputParameters.channelCount = outChannelCount;
+    // outputParameters.sampleFormat = paFloat32;
+    // outputParameters.hostApiSpecificStreamInfo = NULL;
+    // outputParameters.suggestedLatency = Pa_GetDeviceInfo(device)->defaultLowInputLatency;
     PaError err = paNoError;
     // Opening the stream
-    err = Pa_OpenStream(&stream, &inputParameters, &outputParameters, sampleRate, framesPerBuffer, paNoFlag, audioCallback, NULL);
+    err = Pa_OpenDefaultStream(&stream, inChannelCount, outChannelCount, paFloat32, sampleRate, framesPerBuffer, audioCallback, NULL);
     checkErr(err);
 }
 
