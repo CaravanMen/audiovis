@@ -205,7 +205,7 @@ int main() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bassRingsBuffer);
     
     // All bassThreshold Stuff
-    float minBassAmp = 0.006f;
+    float minBassAmp = 0.0062f;
     float bassThreshold = minBassAmp;
     float highestBass = minBassAmp;
     double bassThresholdTimePassed = 0.0;
@@ -240,8 +240,8 @@ int main() {
             fftwType freqData[SAMPDTL];
             fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
             fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
-            fftw_filter(audioBuffer, nullptr, 60, 300, &bassAmp);
-            fftw_filter(audioBuffer, nullptr, 30, 60, &subBassAmp);
+            fftw_filter(audioBuffer, nullptr, 60, 250, &bassAmp);
+            fftw_filter(audioBuffer, nullptr, 20, 50, &subBassAmp);
             bgSmoothing = (bgSmoothing+subBassAmp)/2.0f;
 
             // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
@@ -251,40 +251,45 @@ int main() {
             glUniform1f(1, amp);
             glUniform1f(2, bgSmoothing);
             glUniform1f(4, bassAmp);
+
+            // Set the highest bass
+            if (highestBass < bassAmp)
+            {
+                highestBass = bassAmp;
+            }
+
             // Updating Bass Threshold
             if (bassThresholdTimePassed > 0.03)
             {
-                float deltaBass = bassThreshold-highestBass;
-                if (deltaBass < 0.0008f)
+                float deltaBass = (bassThreshold-highestBass);
+                // Dynamically narrow bass gap? This could help make the visualizer more adaptive for many songs
+                if (deltaBass < -0.0008f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
                     // or the peak volume is being ignored as a result of a circle being spawned in)
                     // bass threshhold stuff
-                    bassThreshold = (highestBass+bassThreshold)/2.0f;
+                    bassThreshold = (highestBass*0.7+(bassThreshold*0.3));
                     if (bassRingTimePassed > 0.17)
                     {
-                        printf("bassRing: %i, bassThreshold: %f, timePassed: %f, highestBassAmp: %f\n", bassRings.nextAvailable, bassThreshold, bassThresholdTimePassed, highestBass);
+                        printf("bassRing: %i, bassThreshold: %f, deltabass: %f, timePassed: %f, highestBassAmp: %f\n", bassRings.nextAvailable, bassThreshold, deltaBass, bassThresholdTimePassed, highestBass);
                         bassRings.array[bassRings.nextAvailable] = outCircRad;
                         memcpy(&bassRings.array[(bassRings.nextAvailable*SAMPDTL)+16], &freqData[0], SAMPDTL*sizeof(freqData[0]));
 
                         bassRings.nextAvailable = (bassRings.nextAvailable < bassRings.maxRings-1)?bassRings.nextAvailable+1:0;
                         bassRingTimePassed = 0;
                     }
-                }else if (deltaBass > 0.0008f)
+                }else if (deltaBass > 0.0005f)
                 {
-                    bassThreshold -= 0.003f*bassThresholdTimePassed;
+                    bassThreshold -= 0.002f*bassRingTimePassed;
                     if (bassThreshold < minBassAmp)
                     {
                         bassThreshold = minBassAmp;
                     }
+                    
                 }
-                bassThresholdTimePassed = 0;
                 highestBass = 0;
-            }
-            if (highestBass < bassAmp)
-            {
-                highestBass = bassAmp;
+                bassThresholdTimePassed = 0;
             }
         }
 
