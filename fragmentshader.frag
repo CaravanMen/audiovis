@@ -51,19 +51,21 @@ void main()
     const float den = distance_from_center-rad-sampData;
 
     // ------- Calculating background information -------
-    const float inverseFac = sub_bass_amp*sub_bass_amp;
-    const float expMult = 65536.0f;
-    const float yOffset = 0.8;
-    const float colShiftMagnitude = expMult*exp((inverseFac-yOffset))-(expMult*exp((-yOffset)));
+    const float maxAsymp = 2;
+    const float xOffset = 0.0045;
+    const float magnitude = 1330;
+    const float colShiftMagnitude = maxAsymp/(1+exp(-magnitude*(sub_bass_amp-xOffset)));
     vec3 backgroundColor = vec3(0);
     backgroundColor.r = mix(0, den/1024.0f, colShiftMagnitude);
 
+    vec3 outRingColor;
     // ------- Drawing Circle -------
     if (den >= -1)
     {
         outColor = vec3(1)/abs(den);
         // Render offset ring
-        outColor+=(mix(vec3(max_amp, 0, 0), vec3(max_amp/8, 0, sub_bass_amp), colShiftMagnitude)*512.0f)/abs(distance_from_center-outCircRad-sampData);
+        outRingColor = (mix(vec3(max_amp, 0, 0), vec3(max_amp/8, 0, sub_bass_amp), colShiftMagnitude)*512.0f);
+        outColor+=outRingColor/abs(distance_from_center-outCircRad-sampData);
         
         // Render outer expanding (radially) rings
         for (int i=0; i<16; i++)
@@ -72,7 +74,7 @@ void main()
             float historicalAmp = array[16+(i*1024)+index]*rad*32.0f;
             if (rad > 0 && distance_from_center<rad+historicalAmp+1)
             {
-                outColor += vec3(0.625f, 0, 5.0f)/abs(distance_from_center-rad-historicalAmp);
+                outColor += outRingColor/abs(distance_from_center-rad-historicalAmp);
             }
         }
         outColor += backgroundColor;

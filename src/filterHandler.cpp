@@ -1,6 +1,10 @@
 #include <filterHandler.h>
-#include <cmath>
 #include <main.h>
+
+// Include libraries
+#include <cmath>
+#include <memory.h>
+#include <string>
 
 int fftSize;
 int fftSampleRate;
@@ -15,7 +19,6 @@ void filter_init(int bufferSize, int sampleRate)
     fftSampleRate = sampleRate;
     fftIn = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
     fftOut = reinterpret_cast<fftwComplex*>(fftwf_malloc(sizeof(fftwComplex) * fftSize));
-
     // For testing purposes
     plan = fftwf_plan_dft_1d(fftSize, fftIn, fftOut, FFTW_FORWARD, FFTW_ESTIMATE);
     inverse_plan = fftwf_plan_dft_1d(fftSize, fftOut, fftIn, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -34,36 +37,44 @@ void filter_init(int bufferSize, int sampleRate)
     // }
 }
 
-bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, fftwType minFreq, fftwType maxFreq, fftwType* ampOut)
+bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, size_t size, fftwType minFreq, fftwType maxFreq, fftwType* ampOut)
 {
-    int min = static_cast<int>(floor(minFreq*fftSize/fftSampleRate));
-    int max = static_cast<int>(ceil(maxFreq*fftSize/fftSampleRate));
-
-    for (size_t i = 0; i < SAMPDTL; i++)
+    int min = static_cast<int>(round((minFreq*fftSize)/fftSampleRate));
+    int max = static_cast<int>(round((maxFreq*fftSize)/fftSampleRate));
+    // printf("min: %i, max: %i\n", min, max);
+    
+    for (size_t i=0; i < fftSize; i++)
     {
+        if (i < size)
+        {
+            fftIn[i][0] = arrayIn[i];
+        } else {
+            fftIn[i][0] = 0;
+        }
         fftIn[i][1] = 0;
-        fftIn[i][0] = arrayIn[i];
     }
+    
     // Run the fft filter
     fftwf_execute(plan);
     // Output filter and find loudest part
-    fftwType amp;
+    fftwType amp = 0.0f; // Amplitude
     for (size_t i = 0; i < max-min; i++)
     {
         int index = min+i;
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
-        fftwType sect = sqrt((real*real)+(imag*imag))/static_cast<float>(fftSize);
+        fftwType sect = sqrt((real*real)+(imag*imag))/fftSize;
         if (arrayOut != nullptr)
         {
             arrayOut[i] = sect;
         }
         // Check amp
-        if (ampOut != nullptr && amp < sect)
+        if (amp < sect)
         {
             amp = sect;
         }
     }
+
     if (ampOut != nullptr)
     {
         *ampOut = amp;

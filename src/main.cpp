@@ -205,17 +205,14 @@ int main() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bassRingsBuffer);
     
     // All bassThreshold Stuff
-    float minBassAmp = 0.0062f;
+    float minBassAmp = 0.006f;
     float bassThreshold = minBassAmp;
     float highestBass = minBassAmp;
     double bassThresholdTimePassed = 0.0;
     double bassRingTimePassed = 0;
     float outCircRad = 16;
 
-    fftwType amp = 0;
-    fftwType bassAmp = 0;
-    fftwType subBassAmp = 0;
-    fftwType bgSmoothing = 0.0f;
+    fftwType amp = 0.0f, bassAmp = 0.0f, subBassAmp = 0.0f, bgSmoothing = 0.0f;
     // Initialise audio handler
     InitialiseAudioHandler(SAMPDTL, RINGBUFFERSIZE);
     // Initialize fftw
@@ -238,10 +235,11 @@ int main() {
         {
             // Filtering Audio
             fftwType freqData[SAMPDTL];
-            fftw_filter(audioBuffer, freqData, MINFREQ, MAXFREQ, nullptr);
-            fftw_filter(audioBuffer, nullptr, 30, MAXFREQ, &amp);
-            fftw_filter(audioBuffer, nullptr, 60, 250, &bassAmp);
-            fftw_filter(audioBuffer, nullptr, 20, 50, &subBassAmp);
+            fftw_filter(audioBuffer, nullptr, SAMPDTL, 60, 250, &bassAmp);
+            fftw_filter(audioBuffer, nullptr, SAMPDTL, 20, 50, &subBassAmp);
+            fftw_filter(audioBuffer, nullptr, SAMPDTL, 50, MAXFREQ, &amp);
+            fftw_filter(audioBuffer, freqData, SAMPDTL, MINFREQ, MAXFREQ, nullptr);
+            // printf("amp: %f, subBassAmp: %f, bassAmp: %f\n", amp, subBassAmp, bassAmp);
             bgSmoothing = (bgSmoothing+subBassAmp)/2.0f;
 
             // Update the SSBO with the latest audio data (if needed) (Push new data into storage buffer)
@@ -259,11 +257,11 @@ int main() {
             }
 
             // Updating Bass Threshold
-            if (bassThresholdTimePassed > 0.03)
+            if (bassThresholdTimePassed > 0.06)
             {
                 float deltaBass = (bassThreshold-highestBass);
                 // Dynamically narrow bass gap? This could help make the visualizer more adaptive for many songs
-                if (deltaBass < -0.0008f)
+                if (deltaBass < -0.0005f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
