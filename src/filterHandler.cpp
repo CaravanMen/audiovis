@@ -39,8 +39,8 @@ void filter_init(int bufferSize, int sampleRate)
 
 bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, size_t size, fftwType minFreq, fftwType maxFreq, fftwType* ampOut)
 {
-    int min = static_cast<int>(round((minFreq*fftSize)/fftSampleRate));
-    int max = static_cast<int>(round((maxFreq*fftSize)/fftSampleRate));
+    int min = static_cast<int>(floor((minFreq*fftSize)/fftSampleRate));
+    int max = static_cast<int>(ceil((maxFreq*fftSize)/fftSampleRate));
     // printf("min: %i, max: %i\n", min, max);
     
     for (size_t i=0; i < fftSize; i++)
@@ -63,7 +63,7 @@ bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, size_t size, fftwType mi
         int index = min+i;
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
-        fftwType sect = sqrt((real*real)+(imag*imag))/fftSize;
+        fftwType sect = sqrt((real*real)+(imag*imag))/40960.0f;
         if (arrayOut != nullptr)
         {
             arrayOut[i] = sect;

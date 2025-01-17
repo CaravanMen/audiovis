@@ -257,11 +257,11 @@ int main() {
             }
 
             // Updating Bass Threshold
-            if (bassThresholdTimePassed > 0.06)
+            if (bassThresholdTimePassed > 0.03)
             {
                 float deltaBass = (bassThreshold-highestBass);
                 // Dynamically narrow bass gap? This could help make the visualizer more adaptive for many songs
-                if (deltaBass < -0.0005f)
+                if (deltaBass < -0.0008f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,

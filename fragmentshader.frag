@@ -74,7 +74,7 @@ void main()
             float historicalAmp = array[16+(i*1024)+index]*rad*32.0f;
             if (rad > 0 && distance_from_center<rad+historicalAmp+1)
             {
-                outColor += outRingColor/abs(distance_from_center-rad-historicalAmp);
+                outColor += vec3(0.4, 0, 2)/abs(distance_from_center-rad-historicalAmp);
             }
         }
         outColor += backgroundColor;
