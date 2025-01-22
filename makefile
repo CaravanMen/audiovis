@@ -1,10 +1,47 @@
+SRCDIR=src
+
+INCDIR=lib/include
+
+BUILDDIR=build
+
+# Collect source files
+CXXSRC=$(wildcard $(SRCDIR)/**/*.cpp) $(wildcard $(SRCDIR)/*.cpp)
+CSRC=$(wildcard $(SRCDIR)/**/*.c) $(wildcard $(SRCDIR)/*.c)
+INC=${wildcard ${INCDIR}/**/*.h}
+
 EXEC=audio-vis
 
-CLIB= -I ./lib/include/ -L ./lib/libraries -lportaudio -lglfw3 -lGL -lfftw3f -lm -lpthread -lasound -ljack
+CFLAGS= -Wall -I ${INCDIR} -L lib/libraries -lportaudio -lglfw3 -lGL -lfftw3f -lm -lpthread -lasound -ljack
 
-${EXEC}: ./src/*
-	g++ -o $@ $^ ${CLIB}
+# Object and dependency files (based on header files)
+OBJS=${CXXSRC:${SRCDIR}/%.cpp=${BUILDDIR}/%.o} ${CSRC:${SRCDIR}/%.c=${BUILDDIR}/%.o}
+DEPS=${OBJS:%.o=%.d}
 
+${EXEC}: $(OBJS)
+	@echo "Building executable $@ from build files {$^}"
+	@g++ -o $@ $^ ${CFLAGS}
+
+$(BUILDDIR)/%.o: ${SRCDIR}/%.c
+	@echo "Compiling $@ from $<"
+	@mkdir -p ${dir $@}
+	@g++ -c $< -o $@ $(CFLAGS) -MMD
+
+$(BUILDDIR)/%.o: ${SRCDIR}/%.cpp
+	@echo "Compiling $@ from $<"
+	@mkdir -p $(dir $@)
+	@g++ -c $< -o $@ $(CFLAGS) -MMD
+
+# Build task
+build: ${EXEC}
+
+# Run Task
+run | debug: ${EXEC}
+	./audio-vis
+
+# Clean Task
 clean:
-	rm ${EXEC};
-.PHONY: clean
+	rm -rd ./${BUILDDIR};
+	rm ./${EXEC};
+.PHONY: clean debug build run
+
+-include $(DEPS)
