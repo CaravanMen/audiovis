@@ -45,17 +45,18 @@ void main()
     // ------- Radius Calculations -------
     // Calculate radius of the circle
     // Create index (based on conversion 2pi=1024, hence 2pi/1024)
-    const int index = BUFFSIZE-int((acos(distance_xy.y/distance_from_center))*floor(BUFFSIZE/3.14f))-1;
+    const int index = BUFFSIZE-int((acos(distance_xy.y/distance_from_center))*(BUFFSIZE/3.141592653589897f))-1;
     const float sampData = highRange[index]*6000.0f;
     const float rad = 73.0f+(max_amp*8192.0f)+(bass_amp*1024.0f);
     const float den = distance_from_center-rad-sampData;
 
     // ------- Calculating background information -------
-    const float xOffset = 0.0045f;
-    const float magnitude = 960.0f;
-    const float colShiftMag = 1.0f/(1.0f+exp(-magnitude*(sub_bass_amp-xOffset)));
+    const float maxAsymp = 2;
+    const float xOffset = 0.0040;
+    const float magnitude = 960;
+    const float colShiftMagnitude = maxAsymp/(1+exp(-magnitude*(sub_bass_amp-xOffset)));
     vec3 backgroundColor = vec3(0);
-    backgroundColor.r = mix(0.0f, den/512.0f, colShiftMag);
+    backgroundColor.g = mix(0, den/1024.0f, colShiftMagnitude);
 
     vec3 outRingColor;
     // ------- Drawing Circle -------
@@ -63,24 +64,24 @@ void main()
     {
         outColor = vec3(1)/abs(den);
         // Render offset ring
-        outRingColor = mix(vec3(max_amp*512.0f, 0.0f, 0.0f), vec3(-max_amp*384.0f, 0.0f, max_amp*1024.0f), colShiftMag);
-        outColor += outRingColor/abs(distance_from_center-outCircRad-sampData);
+        outRingColor = (mix(vec3(0, max_amp, 0), vec3(sub_bass_amp, max_amp/8.0f, 0), colShiftMagnitude)*512.0f);
+        outColor+=outRingColor/abs(distance_from_center-outCircRad-sampData);
         
         // Render outer expanding (radially) rings
         for (int i=0; i<16; i++)
         {
             float rad = array[i];
-            float historicalAmp = array[16+(i*1024)+index]*rad*32.0f;
+            float historicalAmp = array[16+(i*1024)+index]*rad*64.0f;
             if (rad > 0 && distance_from_center<rad+historicalAmp+1)
             {
-                outColor += vec3(0.5f, 0.0f, 4.0f)/abs(distance_from_center-rad-historicalAmp);
+                outColor += vec3(4, 0.8f, 0)/abs(distance_from_center-rad-historicalAmp);
             }
         }
         outColor += backgroundColor;
         // I'm a ghost 2:00
     }else
     {
-        float offset = highRange[BUFFSIZE/2]*6000.0f;
+        float offset = highRange[512]*6000.0f;
         vec2 p = vec2(((distance_xy.x+rad+offset)*1024.0f)/(2.0*(rad+offset)), (distance_xy.y)*1024.0f/(2.0*(rad+offset)));
         float fl = floor(p.x);
         float flAmp = lineData[int(fl)]*256.0f;

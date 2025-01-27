@@ -22,6 +22,7 @@ int audioCallback(const void *input, void *output, unsigned long frameCount, con
     
     unsigned long framesWritten = PaUtil_WriteRingBuffer(&rBuffer, in, framesPerBuffer);
 
+
     // Check for buffer overflow
     if (framesWritten < framesPerBuffer) {
         printf("Ring buffer overflow! Lost %i frames\n", (framesPerBuffer - framesWritten));
@@ -39,7 +40,7 @@ void InitialiseAudioHandler(int FramesPerBuffer, int RingBufferSize){
     checkErr(err);
     // Checking if devices are available:
     int numDevices = Pa_GetDeviceCount();
-    printf("Number of devices: %d", numDevices);
+    printf("Number of devices: %d\n", numDevices);
 
     if (numDevices < 0)
     {

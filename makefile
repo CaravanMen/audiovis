@@ -11,7 +11,7 @@ INC=${wildcard ${INCDIR}/**/*.h}
 
 EXEC=audio-vis
 
-CFLAGS= -Wall -I ${INCDIR} -L lib/libraries -lportaudio -lglfw3 -lGL -lfftw3f -lm -lpthread -lasound -ljack
+CFLAGS= -Wall -I ${INCDIR} -L lib/libraries -lportaudio -ljack -lglfw3 -lGL -lfftw3f -lm -lpthread
 
 # Object and dependency files (based on header files)
 OBJS=${CXXSRC:${SRCDIR}/%.cpp=${BUILDDIR}/%.o} ${CSRC:${SRCDIR}/%.c=${BUILDDIR}/%.o}
@@ -36,7 +36,7 @@ build: ${EXEC}
 
 # Run Task
 run | debug: ${EXEC}
-	./audio-vis
+	pw-jack ./audio-vis
 
 # Clean Task
 clean:
