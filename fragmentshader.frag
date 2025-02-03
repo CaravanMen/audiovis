@@ -25,19 +25,19 @@ out vec3 outColor;
 
 float lineSegment(vec2 p, vec2 a, vec2 b) {
     vec2 pa = p - a, ba = b - a;
-    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-    return smoothstep(0.0, 20.0, length(pa - ba*h));
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0f, 1.0f );
+    return smoothstep(5.0f, 0.0f, length(pa - ba*h));
 }
 
 void main()
 {
     // ------- Calculating Aspect Ratio -------
     float aspect_ratio = 1024.0f/screen_scale.x;
-    // Get location of circle
+    // Set the location of circle
     vec2 location = vec2(screen_scale.x/2, screen_scale.y/2);
 
     // ------- Distance Calculations -------
-    // Get Distance as x,y components
+    // Get distance from the location of the circle as x,y components
     vec2 distance_xy = vec2(location.x-gl_FragCoord.x, location.y-gl_FragCoord.y)*aspect_ratio;
     // Get distance from center of circle
     float distance_from_center = sqrt((distance_xy.x*distance_xy.x) + (distance_xy.y*distance_xy.y));
@@ -48,7 +48,7 @@ void main()
     const int index = BUFFSIZE-int((acos(distance_xy.y/distance_from_center))*floor(BUFFSIZE/3.14f))-1;
     const float sampData = highRange[index]*6000.0f;
     const float rad = 73.0f+(max_amp*8192.0f)+(bass_amp*1024.0f);
-    const float den = distance_from_center-rad-sampData;
+    const float den = distance_from_center-rad-sampData; // This is a weird way of setting the denominator tbh.
 
     // ------- Calculating background information -------
     const float xOffset = 0.0045f;
@@ -57,13 +57,12 @@ void main()
     vec3 backgroundColor = vec3(0);
     backgroundColor.r = mix(0.0f, den/512.0f, colShiftMag);
 
-    vec3 outRingColor;
     // ------- Drawing Circle -------
     if (den >= -1)
     {
         outColor = vec3(1)/abs(den);
         // Render offset ring
-        outRingColor = mix(vec3(max_amp*512.0f, 0.0f, 0.0f), vec3(-max_amp*384.0f, 0.0f, max_amp*1024.0f), colShiftMag);
+        vec3 outRingColor = mix(vec3(max_amp*512.0f, 0.0f, 0.0f), vec3(-max_amp*384.0f, 0.0f, max_amp*1024.0f), colShiftMag);
         outColor += outRingColor/abs(distance_from_center-outCircRad-sampData);
         
         // Render outer expanding (radially) rings
@@ -77,16 +76,21 @@ void main()
             }
         }
         outColor += backgroundColor;
-        // I'm a ghost 2:00
     }else
     {
-        float offset = highRange[BUFFSIZE/2]*6000.0f;
-        vec2 p = vec2(((distance_xy.x+rad+offset)*1024.0f)/(2.0*(rad+offset)), (distance_xy.y)*1024.0f/(2.0*(rad+offset)));
-        float fl = floor(p.x);
-        float flAmp = lineData[int(fl)]*256.0f;
-        float cl = ceil(p.x);
-        float clAmp = lineData[int(cl)]*256.0f;
+        vec3 lineColor = vec3(1.0f);
+        outColor = vec3(lineColor)/abs(den);
+
+        float offset = highRange[512]*6000.0f;
+        const vec2 p = vec2(((distance_xy.x+rad+offset)*1024.0f)/(2.0*(rad+offset)), (distance_xy.y)*1024.0f/(2.0*(rad+offset)));
         // Draw lines
-        outColor = mix(vec3(1.0), vec3(0.0), lineSegment(p, vec2(fl, flAmp), vec2(cl, clAmp)));
+        for (int i=-3; i<=3; i++)
+        {
+            int fl = int(floor(p.x))+i;
+            float flAmp = lineData[fl]*256.0f;
+            int cl = fl+1;
+            float clAmp = lineData[cl]*256.0f;
+            outColor += mix(vec3(0), mix(vec3(0.0f), lineColor, abs(rad-distance_from_center)/64.0f), lineSegment(p, vec2(fl, flAmp), vec2(cl, clAmp)));
+        }
     }
 }

@@ -1,6 +1,7 @@
 // All required libraries and inclusions
 #include <cstddef>
 #define SAMPDTL 1024
+#define CHANNELS 1
 #define MINFREQ 0
 #define MAXFREQ 1200
 #define SAMPLERATE 48000

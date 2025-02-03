@@ -27,11 +27,12 @@ int fwidth, fheight;
 
 // OpenGL Libraries
 #include <glad/glad.h>
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 // OpenGL Functions
 void error_callback(int err, const char* desc)
 {
-    printf("[ERR] GLFW ERR CODE: %i\n DESC: %s\n", err, desc);
+    fprintf(stderr, "[ERR] GLFW ERR CODE: %i\n DESC: %s\n", err, desc);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -134,7 +135,7 @@ unsigned int load_program()
 
 
 // Main function
-int main() {
+int main(int argc, char *argv[]) {
 
     // Initialize OpenGL
     glfwSetErrorCallback(error_callback); /* set error callback */
@@ -142,57 +143,55 @@ int main() {
     if (!glfwInit())
     {
         // GLFW initialization failed
-        printf("[ERR] Failed to initialize GLFW\n");
-        return 1;
+        fprintf(stderr, "[ERR] Failed to initialize GLFW\n");
+        exit(EXIT_FAILURE);
     }
-    printf("[LOG] Successfully initialized GLFW\n");
-    // GLFW window hints
-    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSION_4_6);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSION_4_6);
-    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    fprintf(stdout, "[LOG] Successfully initialized GLFW\n");
     // Create GLFW window
-
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "GLFW window", 0, 0);
-
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "audio-visualizer-by-adamd", NULL, NULL);
     if (!window)
     {
         // Failed to create GLFW window
-        printf("[ERR] Failed to create window\n");
+        fprintf(stderr, "[ERR] Failed to create window\n");
         glfwTerminate();
-        return 1;
+        exit(EXIT_FAILURE);
     }
-    printf("[LOG] Successfully created window\n");
-    // Select GLFW window as current context (for gl drawing)
+    fprintf(stdout, "[LOG] Successfully created window\n");
+    // Set the window as the currently active "context" or selected window (for window-based functions that could alter it)
     glfwMakeContextCurrent(window);
-    // Set window callbacks
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
     // load opengl
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        printf("[ERR] Failed to load openGL\n");
+        fprintf(stderr, "[ERR] Failed to load openGL\n");
         return 1;
     }
     printf("[LOG] Successfully loaded openGL\n");
 
+    // Set window callbacks
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    // glfwSetKeyCallback??
+
+    // Set Vsync to Enabled
+    glfwSwapInterval(1);
     // Create shader program
     unsigned int shaderProgram = load_program();
-    // if (!shaderProgram)
-    // {
-    //     return 1;
-    // }
 
-    // // generate a buffer object
+    // generate a buffer object
     unsigned int ssboID;
     glCreateBuffers(1, &ssboID);
     glNamedBufferStorage(ssboID, sizeof(fftwType)*SAMPDTL*2, 0, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ssboID);
 
-    // Final Initialization of GLFW
+    // ----------------Final Initialization of GLFW--------------------
     glClearColor(0.0, 0.0, 0.0, 1.0);
     // Use the shaderProgram
     glUseProgram(shaderProgram);
     glEnable(GL_CLEAR);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
+    // Setting the clear color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     int glErr;
     // Main while loop
@@ -222,7 +221,7 @@ int main() {
     int32_t buffer[SAMPDTL];
     int error;
     // Open Stream and start adding to Rolling Buffer
-    OpenStream(Pa_GetDefaultInputDevice(), 1, 0, SAMPLERATE);
+    OpenStream(Pa_GetDefaultInputDevice(), CHANNELS, 0, SAMPLERATE);
     StartStream();
     // System clock stuff
     initClock();
@@ -233,12 +232,12 @@ int main() {
 
         // Reading audio
         int framesRead = ReadRingBuffer(audioBuffer, SAMPDTL);
-        if (framesRead)
+        if (framesRead > 0)
         {
             // Filtering Audio
             fftwType freqData[SAMPDTL];
-            fftw_filter(audioBuffer, nullptr, SAMPDTL, 60, 250, &bassAmp);
-            fftw_filter(audioBuffer, nullptr, SAMPDTL, 20, 50, &subBassAmp);
+            fftw_filter(audioBuffer, nullptr, SAMPDTL, 50, 250, &bassAmp);
+            fftw_filter(audioBuffer, nullptr, SAMPDTL, 0, 60, &subBassAmp);
             fftw_filter(audioBuffer, nullptr, SAMPDTL, 50, MAXFREQ, &amp);
             fftw_filter(audioBuffer, freqData, SAMPDTL, MINFREQ, MAXFREQ, nullptr);
             // printf("amp: %f, subBassAmp: %f, bassAmp: %f\n", amp, subBassAmp, bassAmp);
@@ -263,7 +262,7 @@ int main() {
             {
                 float deltaBass = (bassThreshold-highestBass);
                 // Dynamically narrow bass gap? This could help make the visualizer more adaptive for many songs
-                if (deltaBass < -0.0005f)
+                if (deltaBass < -0.0004f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
@@ -375,9 +374,12 @@ int main() {
     glDeleteBuffers(1, &ssboID);
     glDeleteProgram(shaderProgram);
     glDeleteProgram(shaderProgram);
+
     // Terminating all subsystems
     TerminateAudioHandler();
     filter_end();
+    glfwHideWindow(window);
+    glfwDestroyWindow(window);
     glfwTerminate();
-    return 0;
+    exit(EXIT_SUCCESS);
 }
