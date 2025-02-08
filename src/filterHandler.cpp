@@ -63,7 +63,7 @@ bool fftw_filter(fftwType* arrayIn, fftwType* arrayOut, size_t size, fftwType mi
         int index = min+i;
         fftwType real = fftOut[index][0];
         fftwType imag = fftOut[index][1];
-        fftwType sect = sqrt((real*real)+(imag*imag))/40960.0f;
+        fftwType sect = sqrt((real*real)+(imag*imag));
         if (arrayOut != nullptr)
         {
             arrayOut[i] = sect;

@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bassRingsBuffer);
     
     // All bassThreshold Stuff
-    float minBassAmp = 0.006f;
+    float minBassAmp = 245.76f;
     float bassThreshold = minBassAmp;
     float highestBass = minBassAmp;
     double bassThresholdTimePassed = 0.0;
@@ -262,13 +262,13 @@ int main(int argc, char *argv[]) {
             {
                 float deltaBass = (bassThreshold-highestBass);
                 // Dynamically narrow bass gap? This could help make the visualizer more adaptive for many songs
-                if (deltaBass < -0.0004f)
+                if (deltaBass < -16.384f)
                 {
                     // THIS is scuffed truth table, should the bassThreshold be updated b4 or after rings are added, and how can BassThreshold be updated asyncronously???
                     // The issue is that bassThreshold is updated in a way that the peak volume isn't considered (meaning that when the peak volume occurs, a circle has likely already spawned,
                     // or the peak volume is being ignored as a result of a circle being spawned in)
                     // bass threshhold stuff
-                    bassThreshold = (highestBass*0.7+(bassThreshold*0.3));
+                    bassThreshold = (highestBass*0.7f+(bassThreshold*0.3f));
                     if (bassRingTimePassed > 0.17)
                     {
                         printf("bassRing: %i, bassThreshold: %f, deltabass: %f, timePassed: %f, highestBassAmp: %f\n", bassRings.nextAvailable, bassThreshold, deltaBass, bassThresholdTimePassed, highestBass);
@@ -278,21 +278,19 @@ int main(int argc, char *argv[]) {
                         bassRings.nextAvailable = (bassRings.nextAvailable < bassRings.maxRings-1)?bassRings.nextAvailable+1:0;
                         bassRingTimePassed = 0;
                     }
-                }else if (deltaBass > 0.0005f)
+                }else if (deltaBass > 20.48f)
                 {
-                    bassThreshold -= 0.003f*bassRingTimePassed;
+                    bassThreshold -= 122.88f*bassRingTimePassed;
                     if (bassThreshold < minBassAmp)
                     {
                         bassThreshold = minBassAmp;
                     }
-                    
                 }
                 highestBass = 0;
                 bassThresholdTimePassed = 0;
             }
         }
-
-        float newPos = 75.0f+(amp/2)+(amp*128.0f*64.0f)+(bassAmp*1024.0f)+16.0f;
+        float newPos = 75.0f+(amp/81920)+(amp*0.2f)+(bassAmp*0.025f)+16.0f;
         if (newPos > outCircRad)
         {
             outCircRad = newPos;
